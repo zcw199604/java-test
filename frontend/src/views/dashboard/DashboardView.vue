@@ -1,100 +1,133 @@
 <template>
-  <div class="dashboard">
-    <div class="stats">
-      <StatCard label="采购单数量" :value="summary.purchaseCount" hint="来自采购单真实统计数据" />
-      <StatCard label="库存记录数" :value="summary.inventoryCount" hint="基于库存台账的实时统计" />
-      <StatCard label="销售单数量" :value="summary.salesCount" hint="来自销售单真实统计数据" />
-      <StatCard label="预警数量" :value="summary.warningCount" hint="实时统计低于阈值的库存项目" />
+  <div class="page-stack">
+    <div class="kpi-grid">
+      <KpiCard label="采购订单" :value="formatNumber(summary.purchaseCount)" hint="今日订单与在途入库联动监控" tag-text="采购" />
+      <KpiCard label="库存记录" :value="formatNumber(summary.inventoryCount)" hint="按库存台账实时汇总" tag-text="库存" tag-type="warning" />
+      <KpiCard label="销售订单" :value="formatNumber(summary.salesCount)" hint="订单、出库与回款进度联查" tag-text="销售" tag-type="success" />
+      <KpiCard label="预警消息" :value="formatNumber(summary.warningCount)" hint="低库存和异常待办集中提醒" tag-text="预警" tag-type="danger" />
     </div>
 
-    <DataPanel title="快捷模块" description="保留原有业务入口，并补充系统管理相关入口。">
-      <div class="modules">
-        <div v-for="item in summary.modules" :key="item.key" class="module-card">
-          <h3>{{ item.title }}</h3>
-          <p>{{ item.description }}</p>
-          <RouterLink :to="item.route">进入模块 →</RouterLink>
+    <el-alert v-if="loadError" :title="loadError" type="warning" show-icon :closable="false" />
+
+    <div class="two-column-grid">
+      <PageSection title="采销存趋势" description="采购、库存、销售三条业务曲线联动查看。">
+        <AppChart :option="trendOption" :loading="loading" />
+      </PageSection>
+      <PageSection title="预警消息" description="库存阈值、流程堵点和异常提醒集中呈现。">
+        <el-skeleton :loading="loading" animated :rows="4">
+          <template #default>
+            <el-empty v-if="!warningList.length" description="暂无预警消息" />
+            <el-timeline v-else>
+              <el-timeline-item v-for="item in warningList" :key="item.id" :type="item.type" :timestamp="item.time">
+                <strong>{{ item.title }}</strong>
+                <p>{{ item.content }}</p>
+              </el-timeline-item>
+            </el-timeline>
+          </template>
+        </el-skeleton>
+      </PageSection>
+    </div>
+
+    <div class="two-column-grid">
+      <PageSection title="最近操作日志" description="便于值班人员快速回看关键动作。">
+        <AppTable :columns="logColumns" :rows="logRows" :pagination="false" :loading="loading" empty-text="暂无操作日志" />
+      </PageSection>
+      <PageSection title="工作台入口" description="根据当前角色展示重点模块入口。">
+        <div class="portal-grid">
+          <el-card v-for="item in visibleMenus" :key="item.path" class="portal-card" shadow="hover" @click="router.push(item.path)">
+            <div class="portal-title">{{ item.title }}</div>
+            <p>进入 {{ item.title }}，处理对应业务任务。</p>
+          </el-card>
         </div>
-      </div>
-    </DataPanel>
+      </PageSection>
+    </div>
   </div>
 </template>
 
-<script setup>
-import { onMounted, reactive } from 'vue'
-import { RouterLink } from 'vue-router'
-import StatCard from '../../components/StatCard.vue'
-import DataPanel from '../../components/DataPanel.vue'
+<script setup lang="ts">
+import { computed, onMounted, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import type { EChartsOption } from 'echarts'
+import PageSection from '../../components/PageSection.vue'
+import KpiCard from '../../components/KpiCard.vue'
+import AppChart from '../../components/AppChart.vue'
+import AppTable from '../../components/AppTable.vue'
 import { fetchDashboardSummary } from '../../api/dashboard'
+import { fetchInventoryWarnings } from '../../api/inventory'
+import { useAppStore } from '../../stores/app'
+import { formatNumber } from '../../utils/format'
 
-const summary = reactive({
-  purchaseCount: 0,
-  inventoryCount: 0,
-  salesCount: 0,
-  warningCount: 0,
-  modules: []
-})
+interface SummaryState {
+  purchaseCount: number
+  inventoryCount: number
+  salesCount: number
+  warningCount: number
+}
 
-const fallbackModules = [
-  { key: 'users', title: '用户管理', description: '系统用户与角色维护。', route: '/system/users' },
-  { key: 'roles', title: '角色权限', description: '角色与权限配置。', route: '/system/roles' },
-  { key: 'products', title: '商品管理', description: '烟草商品、品类与价格。', route: '/catalog/products' },
-  { key: 'suppliers', title: '供应商管理', description: '供应商和联系人资料。', route: '/supplier/list' },
-  { key: 'purchase', title: '采购管理', description: '采购创建、到货、入库。', route: '/purchase' },
-  { key: 'inventory', title: '库存管理', description: '库存台账、盘点、预警。', route: '/inventory' },
-  { key: 'sales', title: '销售管理', description: '销售订单、出库、回款。', route: '/sales' },
-  { key: 'admin', title: '管理中心', description: '系统配置与运营概览。', route: '/admin' },
-  { key: 'report', title: '报表中心', description: '采购、销售、库存汇总与趋势。', route: '/report/center' }
+interface WarningViewItem {
+  id: string
+  title: string
+  content: string
+  type: 'warning' | 'primary' | 'success' | 'danger'
+  time: string
+}
+
+const router = useRouter()
+const appStore = useAppStore()
+const loading = ref(true)
+const loadError = ref('')
+const summary = reactive<SummaryState>({ purchaseCount: 0, inventoryCount: 0, salesCount: 0, warningCount: 0 })
+const warningList = ref<WarningViewItem[]>([])
+const logRows = ref<Array<Record<string, unknown>>>([
+  { operator: '系统管理员', action: '登录系统', module: '工作台', time: '2026-03-24 09:00:00' },
+  { operator: '采购专员', action: '创建采购单', module: '采购管理', time: '2026-03-24 09:18:00' },
+  { operator: '库管人员', action: '更新库存盘点', module: '库存管理', time: '2026-03-24 10:05:00' }
+])
+const logColumns: Array<{ key: string; label: string; minWidth?: number }> = [
+  { key: 'operator', label: '操作人' },
+  { key: 'action', label: '动作' },
+  { key: 'module', label: '模块' },
+  { key: 'time', label: '时间', minWidth: 180 }
 ]
 
-const loadSummary = async () => {
-  const response = await fetchDashboardSummary()
-  Object.assign(summary, response.data)
-  summary.modules = [...response.data.modules, ...fallbackModules.filter(item => !response.data.modules.find(m => m.route === item.route))]
+const visibleMenus = computed(() => appStore.menuGroups.flatMap((group) => group.children).slice(0, 6))
+
+const trendOption = computed<EChartsOption>(() => ({
+  tooltip: { trigger: 'axis' },
+  legend: { data: ['采购', '库存', '销售'] },
+  grid: { left: 24, right: 24, bottom: 24, containLabel: true },
+  xAxis: { type: 'category', data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'] },
+  yAxis: { type: 'value' },
+  series: [
+    { name: '采购', type: 'line', smooth: true, data: [12, 15, 18, 13, 20, 22, 17] },
+    { name: '库存', type: 'line', smooth: true, data: [68, 66, 64, 61, 60, 58, 55] },
+    { name: '销售', type: 'line', smooth: true, data: [8, 11, 14, 16, 15, 19, 21] }
+  ]
+}))
+
+const loadData = async () => {
+  loading.value = true
+  loadError.value = ''
+  try {
+    const [dashboardResult, warningResult] = await Promise.all([
+      fetchDashboardSummary().catch(() => ({ data: {} })),
+      fetchInventoryWarnings().catch(() => ({ data: [] }))
+    ])
+    Object.assign(summary, dashboardResult.data || {})
+    warningList.value = (warningResult.data || []).map((item: Record<string, unknown>, index: number) => ({
+      id: String(item.id || index + 1),
+      title: `${item.productName || '库存项'} 库存预警`,
+      content: `当前库存 ${item.quantity || 0}，低于预警阈值 ${item.warningThreshold || 0}`,
+      type: 'warning',
+      time: String(item.updatedAt || '刚刚')
+    }))
+    appStore.setNotifications(warningList.value)
+  } catch (error) {
+    loadError.value = '驾驶舱数据加载异常，当前已展示默认内容。'
+  } finally {
+    loading.value = false
+  }
 }
 
-onMounted(() => {
-  loadSummary().catch(() => {
-    summary.modules = fallbackModules
-  })
-})
+onMounted(loadData)
 </script>
-
-<style scoped>
-.dashboard {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.stats {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.modules {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.module-card {
-  background: #f8fafc;
-  border-radius: 16px;
-  padding: 20px;
-}
-
-.module-card h3 {
-  margin-top: 0;
-}
-
-.module-card p {
-  color: #64748b;
-  min-height: 44px;
-}
-
-.module-card a {
-  color: #2563eb;
-  font-weight: 600;
-}
-</style>

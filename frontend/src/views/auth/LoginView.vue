@@ -1,120 +1,100 @@
 <template>
-  <div class="login-page">
-    <div class="login-card">
-      <div class="login-header">
-        <h1>烟草采销存协同管理平台</h1>
-        <p>请输入账号密码登录系统。当前为前后端分离 Vue 前端。</p>
+  <div class="login-screen">
+    <div class="login-overlay"></div>
+    <el-card class="login-card" shadow="never">
+      <div class="login-brand">
+        <div class="brand-badge">TC</div>
+        <div>
+          <h1>烟草采销存协同管理平台</h1>
+          <p>采购、库存、销售、统计追溯一体化工作台</p>
+        </div>
       </div>
-      <form class="login-form" @submit.prevent="handleSubmit">
-        <label>
-          <span>账号</span>
-          <input v-model.trim="form.username" placeholder="请输入账号，如 admin" />
-        </label>
-        <label>
-          <span>密码</span>
-          <input v-model.trim="form.password" type="password" placeholder="请输入密码，如 123456" />
-        </label>
-        <button :disabled="submitting" type="submit">{{ submitting ? '登录中...' : '登录' }}</button>
-      </form>
-      <p class="tips">演示建议：使用后端种子账号登录，例如 admin / 123456。</p>
-    </div>
+      <el-alert v-if="errorMessage" :title="errorMessage" type="error" :closable="false" show-icon class="login-alert" />
+      <el-form ref="formRef" :model="form" :rules="rules" label-position="top" @keyup.enter="handleSubmit">
+        <el-form-item label="账号" prop="username">
+          <el-input v-model="form.username" placeholder="请输入账号，例如 admin" size="large" />
+        </el-form-item>
+        <el-form-item label="密码" prop="password">
+          <el-input v-model="form.password" type="password" show-password placeholder="请输入密码" size="large" />
+        </el-form-item>
+        <div class="login-row">
+          <el-form-item label="验证码" prop="captcha" class="captcha-item">
+            <el-input v-model="form.captcha" placeholder="请输入验证码" size="large" />
+          </el-form-item>
+          <div class="captcha-box" @click="refreshCaptcha">{{ captchaText }}</div>
+        </div>
+        <div class="login-options">
+          <el-checkbox v-model="form.remember">记住我</el-checkbox>
+          <span>演示账号：admin / buyer / seller / keeper</span>
+        </div>
+        <el-button type="primary" class="login-btn" size="large" :loading="submitting" @click="handleSubmit">登录系统</el-button>
+      </el-form>
+    </el-card>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { login, fetchProfile } from '../../api/auth'
+import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
+import { fetchProfile, login } from '../../api/auth'
 import { setToken } from '../../api/http'
 import { useAppStore } from '../../stores/app'
+
+interface LoginFormState {
+  username: string
+  password: string
+  captcha: string
+  remember: boolean
+}
 
 const router = useRouter()
 const route = useRoute()
 const appStore = useAppStore()
+const formRef = ref<FormInstance>()
 const submitting = ref(false)
-const form = reactive({
+const errorMessage = ref('')
+const captchaText = ref('6A9K')
+
+const form = reactive<LoginFormState>({
   username: 'admin',
-  password: '123456'
+  password: '123456',
+  captcha: '6A9K',
+  remember: true
 })
 
+const rules: FormRules<LoginFormState> = {
+  username: [{ required: true, message: '请输入账号', trigger: 'blur' }],
+  password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
+  captcha: [{ required: true, message: '请输入验证码', trigger: 'blur' }]
+}
+
+const refreshCaptcha = () => {
+  captchaText.value = Math.random().toString(36).slice(2, 6).toUpperCase()
+  form.captcha = ''
+}
+
 const handleSubmit = async () => {
-  if (!form.username || !form.password) {
-    window.alert('请输入账号和密码')
+  const valid = await formRef.value?.validate().catch(() => false)
+  if (!valid) return
+  if (form.captcha.toUpperCase() !== captchaText.value) {
+    errorMessage.value = '验证码错误，请重新输入'
+    refreshCaptcha()
     return
   }
-
   submitting.value = true
+  errorMessage.value = ''
   try {
-    const loginResult = await login({ ...form })
-    setToken(loginResult.data.token)
+    const result = await login({ username: form.username, password: form.password })
+    setToken(result.data.token)
     const profileResult = await fetchProfile()
-    appStore.setProfile(profileResult.data)
-    router.push(route.query.redirect || '/dashboard')
+    appStore.bootstrapProfile(profileResult.data || {})
+    ElMessage.success('登录成功，欢迎回来')
+    router.push(String(route.query.redirect || '/dashboard'))
   } catch (error) {
-    window.alert(error?.response?.data?.message || '登录失败，请检查账号密码或后端服务状态')
+    errorMessage.value = '登录失败，请检查账号密码或后端服务状态'
   } finally {
     submitting.value = false
   }
 }
 </script>
-
-<style scoped>
-.login-page {
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  background: linear-gradient(135deg, #0f172a, #1d4ed8);
-}
-
-.login-card {
-  width: 420px;
-  background: rgba(255, 255, 255, 0.96);
-  border-radius: 20px;
-  padding: 32px;
-  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);
-}
-
-.login-header h1 {
-  margin: 0 0 10px;
-  font-size: 28px;
-}
-
-.login-header p,
-.tips {
-  color: #64748b;
-}
-
-.login-form {
-  margin-top: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-label {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-input {
-  border: 1px solid #cbd5e1;
-  border-radius: 12px;
-  padding: 12px 14px;
-  font-size: 15px;
-}
-
-button {
-  border: none;
-  border-radius: 12px;
-  padding: 13px 16px;
-  background: #2563eb;
-  color: #fff;
-  cursor: pointer;
-}
-
-button:disabled {
-  opacity: 0.7;
-  cursor: wait;
-}
-</style>

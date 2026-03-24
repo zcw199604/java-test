@@ -4,8 +4,8 @@ import com.example.tobacco.audit.AuditService;
 import com.example.tobacco.model.UserProfile;
 import com.example.tobacco.util.PasswordCodec;
 import org.apache.shiro.authc.UsernamePasswordToken;
-import org.apache.shiro.subject.Subject;
 import org.apache.shiro.mgt.SecurityManager;
+import org.apache.shiro.subject.Subject;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
@@ -109,8 +109,8 @@ public class AuthService {
             throw new IllegalArgumentException("重置凭证无效");
         }
         Map<String, Object> row = rows.get(0);
-        Timestamp expireAt = (Timestamp) row.get("expireAt");
-        if (expireAt == null || expireAt.toLocalDateTime().isBefore(LocalDateTime.now()) || !"NEW".equals(String.valueOf(row.get("status")))) {
+        LocalDateTime expireAt = toLocalDateTime(row.get("expireAt"));
+        if (expireAt == null || expireAt.isBefore(LocalDateTime.now()) || !"NEW".equals(String.valueOf(row.get("status")))) {
             throw new IllegalArgumentException("重置凭证已失效");
         }
         String encoded = passwordCodec.encode(request.getUsername(), request.getNewPassword());
@@ -176,14 +176,30 @@ public class AuthService {
             throw new IllegalArgumentException("验证码无效");
         }
         Map<String, Object> row = rows.get(0);
-        Timestamp expireAt = (Timestamp) row.get("expireAt");
-        if (!"NEW".equals(String.valueOf(row.get("status"))) || expireAt == null || expireAt.toLocalDateTime().isBefore(LocalDateTime.now())) {
+        LocalDateTime expireAt = toLocalDateTime(row.get("expireAt"));
+        if (!"NEW".equals(String.valueOf(row.get("status"))) || expireAt == null || expireAt.isBefore(LocalDateTime.now())) {
             throw new IllegalArgumentException("验证码已失效");
         }
         if (!String.valueOf(row.get("captcha_code")).equals(captchaCode)) {
             throw new IllegalArgumentException("验证码错误");
         }
         jdbcTemplate.update("update captcha_records set status='USED' where id=?", ((Number) row.get("id")).longValue());
+    }
+
+    private LocalDateTime toLocalDateTime(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof LocalDateTime) {
+            return (LocalDateTime) value;
+        }
+        if (value instanceof Timestamp) {
+            return ((Timestamp) value).toLocalDateTime();
+        }
+        if (value instanceof java.util.Date) {
+            return new Timestamp(((java.util.Date) value).getTime()).toLocalDateTime();
+        }
+        return LocalDateTime.parse(String.valueOf(value).replace(' ', 'T'));
     }
 
     private String clientIp(HttpServletRequest request) {

@@ -34,10 +34,10 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import { fetchProfile, login } from '../../api/auth'
+import { fetchCaptcha, fetchProfile, login } from '../../api/auth'
 import { setToken } from '../../api/http'
 import { useAppStore } from '../../stores/app'
 
@@ -54,12 +54,13 @@ const appStore = useAppStore()
 const formRef = ref<FormInstance>()
 const submitting = ref(false)
 const errorMessage = ref('')
-const captchaText = ref('6A9K')
+const captchaText = ref('----')
+const captchaKey = ref('')
 
 const form = reactive<LoginFormState>({
   username: 'admin',
   password: '123456',
-  captcha: '6A9K',
+  captcha: '',
   remember: true
 })
 
@@ -69,32 +70,44 @@ const rules: FormRules<LoginFormState> = {
   captcha: [{ required: true, message: '请输入验证码', trigger: 'blur' }]
 }
 
-const refreshCaptcha = () => {
-  captchaText.value = Math.random().toString(36).slice(2, 6).toUpperCase()
+const refreshCaptcha = async () => {
+  try {
+    const result = await fetchCaptcha()
+    captchaText.value = result.data?.captchaCode || '----'
+    captchaKey.value = result.data?.captchaKey || ''
+  } catch (error) {
+    captchaText.value = '----'
+    captchaKey.value = ''
+  }
   form.captcha = ''
 }
 
 const handleSubmit = async () => {
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return
-  if (form.captcha.toUpperCase() !== captchaText.value) {
-    errorMessage.value = '验证码错误，请重新输入'
-    refreshCaptcha()
-    return
-  }
   submitting.value = true
   errorMessage.value = ''
   try {
-    const result = await login({ username: form.username, password: form.password })
+    const result = await login({
+      username: form.username,
+      password: form.password,
+      captchaKey: captchaKey.value,
+      captchaCode: form.captcha
+    })
     setToken(result.data.token)
     const profileResult = await fetchProfile()
     appStore.bootstrapProfile(profileResult.data || {})
     ElMessage.success('登录成功，欢迎回来')
     router.push(String(route.query.redirect || '/dashboard'))
   } catch (error) {
-    errorMessage.value = '登录失败，请检查账号密码或后端服务状态'
+    errorMessage.value = '登录失败，请检查账号密码、验证码或后端服务状态'
+    await refreshCaptcha()
   } finally {
     submitting.value = false
   }
 }
+
+onMounted(() => {
+  refreshCaptcha().catch(() => undefined)
+})
 </script>

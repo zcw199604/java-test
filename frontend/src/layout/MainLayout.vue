@@ -38,11 +38,11 @@
             </template>
             <div class="notify-header">
               <span>预警消息</span>
-              <el-button link type="primary" @click="appStore.markAllNotificationsRead">全部已读</el-button>
+              <el-button link type="primary" @click="markAllRead">全部已读</el-button>
             </div>
             <el-empty v-if="!appStore.notifications.length" description="暂无预警消息" />
             <div v-else class="notify-list">
-              <div v-for="item in appStore.notifications" :key="item.id" class="notify-item" @click="appStore.markNotificationRead(item.id)">
+              <div v-for="item in appStore.notifications" :key="item.id" class="notify-item" @click="markRead(item.id)">
                 <strong>{{ item.title }}</strong>
                 <p>{{ item.content }}</p>
               </div>
@@ -89,6 +89,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter, RouterView } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 import { logout } from '../api/auth'
+import { fetchMessages, readMessage } from '../api/message'
 import { clearToken } from '../api/http'
 import { useAppStore } from '../stores/app'
 import MenuTree from '../components/MenuTree.vue'
@@ -118,12 +119,34 @@ const toggleSidebar = () => {
   appStore.toggleSidebar()
 }
 
+const loadMessages = async () => {
+  const result = await fetchMessages().catch(() => ({ data: [] }))
+  appStore.setNotifications((result.data || []).map((item: any) => ({
+    id: String(item.id),
+    title: item.title,
+    content: item.content,
+    type: item.messageType,
+    read: Boolean(item.isRead)
+  })))
+}
+
+const markRead = async (id: string) => {
+  appStore.markNotificationRead(id)
+  await readMessage(id).catch(() => undefined)
+}
+
+const markAllRead = async () => {
+  const pending = appStore.notifications.filter((item) => !item.read)
+  appStore.markAllNotificationsRead()
+  await Promise.all(pending.map((item) => readMessage(item.id).catch(() => undefined)))
+}
+
 const handleLogout = async () => {
   await ElMessageBox.confirm('确认退出当前账号吗？', '退出登录', { type: 'warning' })
   try {
     await logout()
   } catch (error) {
-    // 演示环境忽略退出接口异常
+    // 忽略退出接口异常
   }
   clearToken()
   appStore.clearProfile()
@@ -133,6 +156,7 @@ const handleLogout = async () => {
 onMounted(() => {
   handleResize()
   window.addEventListener('resize', handleResize)
+  loadMessages().catch(() => undefined)
 })
 
 onBeforeUnmount(() => {

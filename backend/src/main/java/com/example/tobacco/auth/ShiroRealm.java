@@ -2,6 +2,7 @@ package com.example.tobacco.auth;
 
 import com.example.tobacco.util.PasswordCodec;
 import org.apache.shiro.authc.*;
+import org.apache.shiro.authc.credential.SimpleCredentialsMatcher;
 import org.apache.shiro.authz.AuthorizationInfo;
 import org.apache.shiro.authz.SimpleAuthorizationInfo;
 import org.apache.shiro.realm.AuthorizingRealm;

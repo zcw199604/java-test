@@ -23,16 +23,14 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import PageSection from '../../components/PageSection.vue'
 import AppTable from '../../components/AppTable.vue'
+import { fetchAbnormalDocs } from '../../api/report'
 
-const rows = ref([
-  { orderNo: 'EX-20260324-01', type: '库存差异', applicant: 'keeper', status: '待审核' },
-  { orderNo: 'EX-20260324-02', type: '异常出库', applicant: 'seller', status: '待审核' }
-])
-const columns = [{ key: 'orderNo', label: '异常单号' }, { key: 'type', label: '异常类型' }, { key: 'applicant', label: '提交人' }, { key: 'status', label: '状态' }]
+const rows = ref([])
+const columns = [{ key: 'orderNo', label: '异常单号' }, { key: 'abnormalType', label: '异常类型' }, { key: 'reportedBy', label: '提交人' }, { key: 'status', label: '状态' }]
 const dialogVisible = ref(false)
 const actionLabel = ref('')
 const remark = ref('')
@@ -44,6 +42,11 @@ const openDialog = (row, action) => {
 
 const handleSubmit = () => {
   dialogVisible.value = false
-  ElMessage.success('异常审核结果已提交')
+  ElMessage.success('异常审核结果已提交（当前后端仅提供查询能力）')
 }
+
+onMounted(async () => {
+  const result = await fetchAbnormalDocs().catch(() => ({ data: [] }))
+  rows.value = result.data || []
+})
 </script>

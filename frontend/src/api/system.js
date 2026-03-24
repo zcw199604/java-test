@@ -1,4 +1,16 @@
 import http from './http'
 
 export const fetchUsers = () => http.get('/users')
+export const createUser = (payload) => http.post('/users', payload)
+export const updateUser = (id, payload) => http.put(`/users/${id}`, payload)
+export const updateUserStatus = (id, payload) => http.put(`/users/${id}/status`, payload)
 export const fetchRoles = () => http.get('/roles')
+export const updateRole = (code, payload) => http.put(`/roles/${code}`, payload)
+export const fetchPermissions = () => http.get('/permissions')
+export const fetchConfigs = () => http.get('/configs')
+export const updateConfig = (key, payload) => http.put(`/configs/${key}`, payload)
+export const fetchWarehouses = () => http.get('/warehouses')
+export const fetchLoginLogs = () => http.get('/logs/login')
+export const fetchOperationLogs = () => http.get('/logs/operation')
+export const updateProfile = (payload) => http.put('/profile', payload)
+export const changePassword = (payload) => http.post('/profile/password', payload)

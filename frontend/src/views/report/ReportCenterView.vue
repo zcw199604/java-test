@@ -2,7 +2,7 @@
   <div class="page-grid">
     <DataPanel title="汇总报表" description="展示采购、销售和库存汇总信息。">
       <template #actions>
-        <button class="primary-btn" @click="handleExport">导出 CSV</button>
+        <button class="primary-btn" @click="handleExport">导出 Excel</button>
       </template>
       <div class="stats-row">
         <div class="stat-box">
@@ -28,7 +28,7 @@
       <TrendChart :points="trends" />
     </DataPanel>
 
-    <DataPanel title="CSV 预览" description="展示导出接口返回的真实 CSV 内容。">
+    <DataPanel title="导出说明" description="展示导出接口当前输出格式。">
       <pre class="export-box">{{ exportPreview }}</pre>
     </DataPanel>
   </div>
@@ -76,12 +76,3 @@ onMounted(async () => {
   exportPreview.value = e.data
 })
 </script>
-
-<style scoped>
-.page-grid { display: grid; gap: 24px; }
-.stats-row { display: flex; gap: 16px; }
-.stat-box { background: #f8fafc; border-radius: 14px; padding: 18px 20px; display: flex; flex-direction: column; gap: 8px; min-width: 220px; }
-.stat-box strong { font-size: 28px; }
-.primary-btn { border: none; background: #2563eb; color: #fff; border-radius: 10px; padding: 10px 14px; cursor: pointer; }
-.export-box { background: #0f172a; color: #e2e8f0; border-radius: 12px; padding: 16px; overflow-x: auto; white-space: pre-wrap; }
-</style>

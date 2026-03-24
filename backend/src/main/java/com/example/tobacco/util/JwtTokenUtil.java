@@ -1,43 +1,19 @@
 package com.example.tobacco.util;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
-import java.util.Date;
-
+/**
+ * 兼容层：当前版本已迁移为 Shiro + user_sessions，会话不再依赖 JWT。
+ * 保留该类仅避免历史引用导致编译失败；如仍被调用则明确抛错。
+ */
 @Component
 public class JwtTokenUtil {
 
-    @Value("${app.jwt.secret}")
-    private String secret;
-
-    @Value("${app.jwt.expire-hours}")
-    private Integer expireHours;
-
     public String generateToken(Long userId, String username, String roleCode) {
-        Date now = new Date();
-        Date expireAt = new Date(now.getTime() + expireHours.longValue() * 60L * 60L * 1000L);
-        return Jwts.builder()
-                .setSubject(username)
-                .claim("userId", userId)
-                .claim("roleCode", roleCode)
-                .setIssuedAt(now)
-                .setExpiration(expireAt)
-                .signWith(getSecretKey(), SignatureAlgorithm.HS256)
-                .compact();
+        throw new UnsupportedOperationException("当前版本已切换为 Shiro 会话，不再生成 JWT");
     }
 
-    public Claims parseToken(String token) {
-        return Jwts.parserBuilder().setSigningKey(getSecretKey()).build().parseClaimsJws(token).getBody();
-    }
-
-    private SecretKey getSecretKey() {
-        return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+    public Object parseToken(String token) {
+        throw new UnsupportedOperationException("当前版本已切换为 Shiro 会话，不再解析 JWT");
     }
 }

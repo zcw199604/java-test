@@ -17,27 +17,30 @@ import { onMounted, ref } from 'vue'
 import { fetchProducts } from '../../api/catalog'
 import { fetchSuppliers } from '../../api/supplier'
 import { fetchCustomers } from '../../api/customer'
+import { fetchWarehouses } from '../../api/system'
 import PageSection from '../../components/PageSection.vue'
 import AppTable from '../../components/AppTable.vue'
 
 const products = ref([])
 const suppliers = ref([])
 const customers = ref([])
-const warehouses = ref([{ name: '杭州中心仓', manager: '库管A', status: '启用' }, { name: '绍兴分仓', manager: '库管B', status: '启用' }])
+const warehouses = ref([])
 const productColumns = [{ key: 'code', label: '编码' }, { key: 'name', label: '名称' }, { key: 'category', label: '品类' }, { key: 'status', label: '状态' }]
 const supplierColumns = [{ key: 'name', label: '供应商' }, { key: 'contactName', label: '联系人' }, { key: 'contactPhone', label: '电话' }]
 const customerColumns = [{ key: 'name', label: '客户' }, { key: 'contactName', label: '联系人' }, { key: 'contactPhone', label: '电话' }]
-const warehouseColumns = [{ key: 'name', label: '仓库' }, { key: 'manager', label: '负责人' }, { key: 'status', label: '状态' }]
+const warehouseColumns = [{ key: 'code', label: '编码' }, { key: 'name', label: '仓库' }, { key: 'address', label: '地址' }, { key: 'status', label: '状态' }]
 const priceColumns = [{ key: 'name', label: '商品' }, { key: 'unitPrice', label: '单价' }, { key: 'warningThreshold', label: '预警阈值' }]
 
 onMounted(async () => {
-  const [productResult, supplierResult, customerResult] = await Promise.all([
+  const [productResult, supplierResult, customerResult, warehouseResult] = await Promise.all([
     fetchProducts().catch(() => ({ data: [] })),
     fetchSuppliers().catch(() => ({ data: [] })),
-    fetchCustomers().catch(() => ({ data: [] }))
+    fetchCustomers().catch(() => ({ data: [] })),
+    fetchWarehouses().catch(() => ({ data: [] }))
   ])
   products.value = productResult.data || []
   suppliers.value = supplierResult.data || []
   customers.value = customerResult.data || []
+  warehouses.value = warehouseResult.data || []
 })
 </script>

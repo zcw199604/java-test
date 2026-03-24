@@ -5,10 +5,7 @@
         <el-card shadow="never">
           <div class="tree-title">角色列表</div>
           <el-radio-group v-model="currentRole">
-            <el-radio-button label="ADMIN">平台管理员</el-radio-button>
-            <el-radio-button label="PURCHASER">采购专员</el-radio-button>
-            <el-radio-button label="SELLER">销售专员</el-radio-button>
-            <el-radio-button label="KEEPER">库管人员</el-radio-button>
+            <el-radio-button v-for="item in roles" :key="item.code" :label="item.code">{{ item.name }}</el-radio-button>
           </el-radio-group>
         </el-card>
         <el-card shadow="never">
@@ -24,22 +21,43 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import { fetchPermissions, fetchRoles, updateRole } from '../../api/system'
 import PageSection from '../../components/PageSection.vue'
 
 const treeRef = ref(null)
-const currentRole = ref('ADMIN')
-const treeData = [
-  { id: 1, label: '工作台', children: [{ id: 11, label: '驾驶舱' }, { id: 12, label: '个人中心' }] },
-  { id: 2, label: '采购管理', children: [{ id: 21, label: '采购订单' }, { id: 22, label: '采购入库' }, { id: 23, label: '采购分析' }] },
-  { id: 3, label: '销售管理', children: [{ id: 31, label: '销售订单' }, { id: 32, label: '销售出库' }, { id: 33, label: '销售绩效' }] },
-  { id: 4, label: '库存管理', children: [{ id: 41, label: '库存总览' }, { id: 42, label: '库存流水' }, { id: 43, label: '库存盘点' }, { id: 44, label: '库存台账' }] },
-  { id: 5, label: '统计追溯', children: [{ id: 51, label: '经营大屏' }, { id: 52, label: '合规追溯' }, { id: 53, label: '异常审核' }] }
-]
+const currentRole = ref('SUPER_ADMIN')
+const roles = ref([])
+const permissions = ref([])
 
-const handleSave = () => {
+const treeData = computed(() => {
+  const groups = {}
+  permissions.value.forEach((item) => {
+    const group = item.module || 'OTHER'
+    if (!groups[group]) {
+      groups[group] = { id: group, label: group, children: [] }
+    }
+    groups[group].children.push({ id: item.code, label: `${item.name} (${item.code})` })
+  })
+  return Object.values(groups)
+})
+
+const handleSave = async () => {
   const checked = treeRef.value?.getCheckedKeys?.() || []
+  await updateRole(currentRole.value, { permissions: checked })
   ElMessage.success(`已为 ${currentRole.value} 保存 ${checked.length} 项权限`)
 }
+
+onMounted(async () => {
+  const [roleResult, permissionResult] = await Promise.all([
+    fetchRoles().catch(() => ({ data: [] })),
+    fetchPermissions().catch(() => ({ data: [] }))
+  ])
+  roles.value = roleResult.data || []
+  permissions.value = permissionResult.data || []
+  if (roles.value.length > 0) {
+    currentRole.value = roles.value[0].code
+  }
+})
 </script>

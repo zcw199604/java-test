@@ -39,8 +39,8 @@ public class AuthInterceptor implements HandlerInterceptor {
             return unauthorized(response, "登录已过期或令牌无效");
         }
         Map<String, Object> row = rows.get(0);
-        Timestamp expireAt = (Timestamp) row.get("expireAt");
-        if (!"ACTIVE".equals(String.valueOf(row.get("status"))) || expireAt == null || expireAt.toLocalDateTime().isBefore(LocalDateTime.now())) {
+        LocalDateTime expireAt = toLocalDateTime(row.get("expireAt"));
+        if (!"ACTIVE".equals(String.valueOf(row.get("status"))) || expireAt == null || expireAt.isBefore(LocalDateTime.now())) {
             return unauthorized(response, "登录已过期或令牌无效");
         }
         jdbcTemplate.update("update user_sessions set last_access_at=now() where session_token=?", token);
@@ -49,6 +49,22 @@ public class AuthInterceptor implements HandlerInterceptor {
         request.setAttribute("username", String.valueOf(row.get("username")));
         request.setAttribute("roleCode", String.valueOf(row.get("roleCode")));
         return true;
+    }
+
+    private LocalDateTime toLocalDateTime(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof LocalDateTime) {
+            return (LocalDateTime) value;
+        }
+        if (value instanceof Timestamp) {
+            return ((Timestamp) value).toLocalDateTime();
+        }
+        if (value instanceof java.util.Date) {
+            return new Timestamp(((java.util.Date) value).getTime()).toLocalDateTime();
+        }
+        return LocalDateTime.parse(String.valueOf(value).replace(' ', 'T'));
     }
 
     private boolean unauthorized(HttpServletResponse response, String message) throws Exception {

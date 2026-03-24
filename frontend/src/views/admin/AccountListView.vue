@@ -17,9 +17,17 @@
     <el-dialog v-model="dialogVisible" title="新增账号" width="520px">
       <el-form :model="form" label-position="top">
         <el-form-item label="账号"><el-input v-model="form.username" /></el-form-item>
+        <el-form-item label="初始密码"><el-input v-model="form.password" /></el-form-item>
         <el-form-item label="姓名"><el-input v-model="form.realName" /></el-form-item>
-        <el-form-item label="角色"><el-select v-model="form.roleCode" style="width: 100%"><el-option label="平台管理员" value="ADMIN" /><el-option label="采购专员" value="PURCHASER" /><el-option label="销售专员" value="SELLER" /><el-option label="库管人员" value="KEEPER" /></el-select></el-form-item>
-        <el-form-item label="指派范围"><el-input v-model="form.scope" /></el-form-item>
+        <el-form-item label="角色">
+          <el-select v-model="form.roleCode" style="width: 100%">
+            <el-option label="超级管理员" value="SUPER_ADMIN" />
+            <el-option label="采购专员" value="PURCHASER" />
+            <el-option label="销售专员" value="SELLER" />
+            <el-option label="库管人员" value="KEEPER" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="指派范围"><el-input v-model="form.scopeValue" placeholder="如 WH-001 / ALL" /></el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -32,32 +40,38 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { fetchUsers } from '../../api/system'
+import { createUser, fetchUsers } from '../../api/system'
 import PageSection from '../../components/PageSection.vue'
 import AppTable from '../../components/AppTable.vue'
 
 const keyword = ref('')
 const rows = ref([])
 const dialogVisible = ref(false)
-const form = reactive({ username: '', realName: '', roleCode: 'PURCHASER', scope: '默认辖区' })
+const form = reactive({ username: '', password: '123456', realName: '', roleCode: 'PURCHASER', scopeType: 'WAREHOUSE', scopeValue: 'WH-001' })
 const columns = [
   { key: 'username', label: '账号' },
   { key: 'realName', label: '姓名' },
   { key: 'roleName', label: '角色' },
-  { key: 'scope', label: '指派范围' },
-  { key: 'status', label: '状态' }
+  { key: 'status', label: '状态', slot: 'status' },
+  { key: 'createdAt', label: '创建时间' }
 ]
 
-const filteredRows = computed(() => rows.value.filter((item) => !keyword.value || [item.username, item.realName, item.roleName].filter(Boolean).join(' ').includes(keyword.value)))
+const filteredRows = computed(() => rows.value.filter((item) => !keyword.value || JSON.stringify(item).includes(keyword.value)))
 
-const handleSave = () => {
-  rows.value.unshift({ ...form, roleName: form.roleCode, status: 'ENABLED' })
-  dialogVisible.value = false
-  ElMessage.success('演示环境已完成新增账号交互设计')
+const loadData = async () => {
+  const result = await fetchUsers().catch(() => ({ data: [] }))
+  rows.value = result.data || []
 }
 
-onMounted(async () => {
-  const result = await fetchUsers().catch(() => ({ data: [] }))
-  rows.value = (result.data.records || result.data || []).map((item) => ({ ...item, scope: item.scope || '全区域' }))
+const handleSave = async () => {
+  await createUser(form)
+  ElMessage.success('账号已创建')
+  dialogVisible.value = false
+  Object.assign(form, { username: '', password: '123456', realName: '', roleCode: 'PURCHASER', scopeType: 'WAREHOUSE', scopeValue: 'WH-001' })
+  await loadData()
+}
+
+onMounted(() => {
+  loadData().catch(() => undefined)
 })
 </script>

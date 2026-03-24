@@ -23,10 +23,27 @@ const adminPermissions = [
 ]
 
 export const rolePermissionMap: Record<string, string[]> = {
+  SUPER_ADMIN: adminPermissions,
   ADMIN: adminPermissions,
   PURCHASER: ['dashboard:view', 'profile:view', 'purchase:view', 'purchase:edit', 'report:view', 'trace:view'],
   SELLER: ['dashboard:view', 'profile:view', 'sale:view', 'sale:edit', 'report:view', 'trace:view'],
   KEEPER: ['dashboard:view', 'profile:view', 'inventory:view', 'inventory:edit', 'report:view', 'trace:view']
+}
+
+const backendToFrontendPermissionMap: Record<string, string[]> = {
+  'system:user:view': ['admin:account:view'],
+  'system:user:edit': ['admin:account:view'],
+  'system:role:edit': ['admin:role:view'],
+  'system:config:edit': ['admin:config:view'],
+  'purchase:order:edit': ['purchase:view', 'purchase:edit'],
+  'purchase:inbound': ['purchase:edit'],
+  'sales:order:edit': ['sale:view', 'sale:edit'],
+  'sales:payment': ['sale:edit'],
+  'inventory:manage': ['inventory:view', 'inventory:edit'],
+  'report:view': ['report:view'],
+  'logs:view': ['admin:log:view'],
+  'message:view': ['dashboard:view'],
+  '*:*': ['*:*']
 }
 
 export const menuGroups: MenuSeed[] = [
@@ -41,17 +58,35 @@ export const menuGroups: MenuSeed[] = [
 export const resolveRoleCode = (profile: UserProfile = {}): string => {
   const roleCode = profile.roleCode || profile.role_code || profile.role || ''
   if (roleCode) return String(roleCode).toUpperCase()
-  if (profile.username === 'admin') return 'ADMIN'
+  if (profile.username === 'admin') return 'SUPER_ADMIN'
   if (profile.username === 'buyer') return 'PURCHASER'
   if (profile.username === 'seller') return 'SELLER'
   if (profile.username === 'keeper') return 'KEEPER'
-  return 'ADMIN'
+  return 'SUPER_ADMIN'
 }
 
 export const resolvePermissions = (profile: UserProfile = {}): string[] => {
+  const normalized = new Set<string>()
+  normalized.add('dashboard:view')
+  normalized.add('profile:view')
+
   const raw = Array.isArray(profile.permissions) ? profile.permissions.filter(Boolean) : []
-  if (raw.length) return raw
-  return rolePermissionMap[resolveRoleCode(profile)] || ['dashboard:view', 'profile:view']
+  raw.forEach((item) => {
+    normalized.add(item)
+    ;(backendToFrontendPermissionMap[item] || []).forEach((mapped) => normalized.add(mapped))
+  })
+
+  rolePermissionMap[resolveRoleCode(profile)]?.forEach((item) => normalized.add(item))
+
+  if (normalized.has('report:view')) {
+    normalized.add('trace:view')
+  }
+  if (resolveRoleCode(profile) === 'SUPER_ADMIN') {
+    normalized.add('audit:view')
+    normalized.add('admin:base:view')
+  }
+
+  return Array.from(normalized)
 }
 
 export const hasPermission = (ownedPermissions: string[] = [], required?: string | string[]): boolean => {

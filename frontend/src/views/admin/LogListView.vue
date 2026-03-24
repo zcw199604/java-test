@@ -5,8 +5,11 @@
         <el-button v-permission="'admin:log:view'" @click="handleExport">导出 Excel</el-button>
       </template>
       <div class="toolbar-grid two">
-        <el-date-picker v-model="dateRange" type="daterange" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" />
-        <el-input v-model="keyword" placeholder="搜索模块或操作人" clearable />
+        <el-select v-model="logType" placeholder="请选择日志类型">
+          <el-option label="操作日志" value="operation" />
+          <el-option label="登录日志" value="login" />
+        </el-select>
+        <el-input v-model="keyword" placeholder="搜索模块、操作人或状态" clearable />
       </div>
       <AppTable :columns="columns" :rows="filteredRows" />
     </PageSection>
@@ -14,20 +17,30 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import PageSection from '../../components/PageSection.vue'
 import AppTable from '../../components/AppTable.vue'
 import { exportRowsToExcel } from '../../utils/export'
+import { fetchLoginLogs, fetchOperationLogs } from '../../api/system'
 
 const keyword = ref('')
-const dateRange = ref([])
-const rows = ref([
-  { operator: 'admin', module: '用户管理', action: '新增账号', time: '2026-03-24 09:00:00' },
-  { operator: 'buyer', module: '采购订单', action: '创建订单', time: '2026-03-24 09:25:00' },
-  { operator: 'keeper', module: '库存盘点', action: '提交盘点', time: '2026-03-24 10:45:00' }
-])
-const columns = [{ key: 'operator', label: '操作人' }, { key: 'module', label: '模块' }, { key: 'action', label: '动作' }, { key: 'time', label: '时间', minWidth: 180 }]
+const logType = ref('operation')
+const loginRows = ref([])
+const operationRows = ref([])
+const columns = computed(() => logType.value === 'operation'
+  ? [{ key: 'username', label: '操作人' }, { key: 'module', label: '模块' }, { key: 'action', label: '动作' }, { key: 'createdAt', label: '时间', minWidth: 180 }]
+  : [{ key: 'username', label: '账号' }, { key: 'status', label: '状态' }, { key: 'message', label: '说明' }, { key: 'createdAt', label: '时间', minWidth: 180 }])
 
-const filteredRows = computed(() => rows.value.filter((item) => !keyword.value || `${item.operator}${item.module}${item.action}`.includes(keyword.value)))
-const handleExport = () => exportRowsToExcel(filteredRows.value, '操作日志.xlsx', 'logs')
+const currentRows = computed(() => (logType.value === 'operation' ? operationRows.value : loginRows.value))
+const filteredRows = computed(() => currentRows.value.filter((item) => !keyword.value || JSON.stringify(item).includes(keyword.value)))
+const handleExport = () => exportRowsToExcel(filteredRows.value, `${logType.value}-logs.xlsx`, 'logs')
+
+onMounted(async () => {
+  const [loginResult, operationResult] = await Promise.all([
+    fetchLoginLogs().catch(() => ({ data: [] })),
+    fetchOperationLogs().catch(() => ({ data: [] }))
+  ])
+  loginRows.value = loginResult.data || []
+  operationRows.value = operationResult.data || []
+})
 </script>

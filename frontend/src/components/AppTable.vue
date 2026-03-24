@@ -11,7 +11,10 @@
         >
           <template #default="scope">
             <slot :name="column.key" :row="scope.row" :value="scope.row[column.key]">
-              <span>{{ scope.row[column.key] ?? '--' }}</span>
+              <el-tag v-if="['status', 'bizType'].includes(column.key) && scope.row[column.key]" :type="statusTypeMap[String(scope.row[column.key])] || 'info'">
+                {{ statusLabelMap[String(scope.row[column.key])] || scope.row[column.key] }}
+              </el-tag>
+              <span v-else>{{ scope.row[column.key] ?? '--' }}</span>
             </slot>
           </template>
         </el-table-column>
@@ -39,6 +42,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { statusLabelMap, statusTypeMap } from '../utils/format'
 
 export interface TableColumnConfig {
   key: string

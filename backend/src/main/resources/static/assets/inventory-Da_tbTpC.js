@@ -1,0 +1,1 @@
+import{h as n}from"./index-BNrDZyJH.js";const o=()=>n.get("/inventories"),s=()=>n.get("/inventory-records"),c=()=>n.get("/inventory-warnings"),i=t=>{const e=t.actionType==="TRANSFER"?"/inventory-transfers":"/inventory-checks";return n.post(e,t)};export{o as a,s as b,i as c,c as f};

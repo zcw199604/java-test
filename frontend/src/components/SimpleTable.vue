@@ -21,6 +21,8 @@
 </template>
 
 <script setup>
+import { statusLabelMap } from '../utils/format'
+
 const props = defineProps({
   columns: {
     type: Array,
@@ -33,10 +35,14 @@ const props = defineProps({
 })
 
 const formatCell = (row, column) => {
+  const value = row[column.key]
   if (typeof column.formatter === 'function') {
-    return column.formatter(row[column.key], row)
+    return column.formatter(value, row)
   }
-  return row[column.key] ?? '-'
+  if (['status', 'bizType'].includes(column.key) && value) {
+    return statusLabelMap[value] || value
+  }
+  return value ?? '-'
 }
 </script>
 

@@ -9,6 +9,7 @@ public class InventoryRecordItem {
     private Integer changeQty;
     private Integer beforeQty;
     private Integer afterQty;
+    private String operatorName;
     private String remark;
     private String createdAt;
     public Long getId() { return id; }
@@ -27,6 +28,8 @@ public class InventoryRecordItem {
     public void setBeforeQty(Integer beforeQty) { this.beforeQty = beforeQty; }
     public Integer getAfterQty() { return afterQty; }
     public void setAfterQty(Integer afterQty) { this.afterQty = afterQty; }
+    public String getOperatorName() { return operatorName; }
+    public void setOperatorName(String operatorName) { this.operatorName = operatorName; }
     public String getRemark() { return remark; }
     public void setRemark(String remark) { this.remark = remark; }
     public String getCreatedAt() { return createdAt; }

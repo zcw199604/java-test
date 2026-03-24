@@ -24,7 +24,10 @@ export const statusTypeMap: Record<string, string> = {
   PENDING: 'warning',
   CHECK: 'primary',
   TRANSFER: 'warning',
-  OUTBOUND: 'danger'
+  OUTBOUND: 'warning',
+  PARTIAL_PAID: 'warning',
+  SALES_OUTBOUND: 'danger',
+  PURCHASE_INBOUND: 'success'
 }
 
 export const statusLabelMap: Record<string, string> = {
@@ -39,5 +42,8 @@ export const statusLabelMap: Record<string, string> = {
   TRANSFER: '调拨',
   PURCHASE: '采购',
   SALE: '销售',
-  OUTBOUND: '出库'
+  OUTBOUND: '已出库',
+  PARTIAL_PAID: '部分回款',
+  SALES_OUTBOUND: '销售出库',
+  PURCHASE_INBOUND: '采购入库'
 }

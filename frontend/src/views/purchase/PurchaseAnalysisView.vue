@@ -9,7 +9,11 @@
       </PageSection>
     </div>
     <PageSection title="采购明细" description="结合列表快速筛选异常金额订单。">
-      <AppTable :columns="columns" :rows="rows" />
+      <AppTable :columns="columns" :rows="rows">
+        <template #status="{ value }">
+          <el-tag :type="statusTypeMap[value] || 'info'">{{ statusLabelMap[value] || value }}</el-tag>
+        </template>
+      </AppTable>
     </PageSection>
   </div>
 </template>
@@ -20,6 +24,7 @@ import PageSection from '../../components/PageSection.vue'
 import AppChart from '../../components/AppChart.vue'
 import AppTable from '../../components/AppTable.vue'
 import { fetchPurchases } from '../../api/purchase'
+import { statusLabelMap, statusTypeMap } from '../../utils/format'
 
 const rows = ref([])
 const columns = [{ key: 'orderNo', label: '订单号' }, { key: 'supplierName', label: '供应商' }, { key: 'productName', label: '商品' }, { key: 'totalAmount', label: '总额' }, { key: 'status', label: '状态' }]

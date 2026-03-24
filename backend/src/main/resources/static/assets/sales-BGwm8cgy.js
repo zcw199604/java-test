@@ -1,0 +1,1 @@
+import{h as t}from"./index-BNrDZyJH.js";const o=()=>t.get("/sales"),p=s=>t.post("/sales",s),l=s=>t.post(`/sales/${s}/outbound`),n=(s,a)=>t.post(`/sales/${s}/payment`,a);export{p as c,o as f,l as o,n as p};

@@ -34,7 +34,16 @@ const exportPreview = ref('')
 const purchaseLabel = computed(() => `${purchaseSummary.value.count || 0} 单 / ${purchaseSummary.value.amount || 0}`)
 const salesLabel = computed(() => `${salesSummary.value.count || 0} 单 / ${salesSummary.value.amount || 0}`)
 const inventoryLabel = computed(() => `${inventorySummary.value.count || 0} 项 / ${inventorySummary.value.amount || 0}`)
-const lineOption = computed(() => ({ xAxis: { type: 'category', data: trendRows.value.map((item) => item.label || item.day || item.date) }, yAxis: { type: 'value' }, series: [{ type: 'line', data: trendRows.value.map((item) => item.value || item.amount || 0), smooth: true }] }))
+const lineOption = computed(() => ({
+  tooltip: { trigger: 'axis' },
+  legend: { data: ['采购金额', '销售金额'] },
+  xAxis: { type: 'category', data: trendRows.value.map((item) => item.period || '--') },
+  yAxis: { type: 'value' },
+  series: [
+    { name: '采购金额', type: 'line', smooth: true, data: trendRows.value.map((item) => Number(item.purchaseAmount || 0)) },
+    { name: '销售金额', type: 'line', smooth: true, data: trendRows.value.map((item) => Number(item.salesAmount || 0)) }
+  ]
+}))
 const barOption = computed(() => ({ xAxis: { type: 'category', data: inventoryRows.value.map((item) => item.productName) }, yAxis: { type: 'value' }, series: [{ type: 'bar', data: inventoryRows.value.map((item) => item.quantity || 0) }] }))
 const handleExport = async () => exportReport()
 

@@ -8,7 +8,7 @@
         </el-space>
       </template>
       <AppTable :columns="columns" :rows="rows">
-        <template #status="{ value }"><el-tag :type="value === 'PAID' ? 'success' : 'warning'">{{ value === 'PAID' ? '已回款' : '处理中' }}</el-tag></template>
+        <template #status="{ value }"><el-tag :type="statusTypeMap[value] || 'info'">{{ statusLabelMap[value] || value }}</el-tag></template>
         <template #actions="{ row }">
           <el-button v-permission="'sale:edit'" link type="primary" @click="router.push(`/sale/order/${row.id}/edit`)">编辑</el-button>
           <el-button v-permission="'sale:edit'" link type="warning" @click="handleOutbound(row)" v-if="row.status === 'CREATED'">出库</el-button>
@@ -27,6 +27,7 @@ import PageSection from '../../components/PageSection.vue'
 import AppTable from '../../components/AppTable.vue'
 import { fetchSales, outboundSales, paymentSales } from '../../api/sales'
 import { exportRowsToExcel } from '../../utils/export'
+import { statusLabelMap, statusTypeMap } from '../../utils/format'
 
 const router = useRouter()
 const rows = ref([])

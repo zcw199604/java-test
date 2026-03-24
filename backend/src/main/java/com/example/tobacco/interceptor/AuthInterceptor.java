@@ -1,48 +1,60 @@
 package com.example.tobacco.interceptor;
 
-import com.example.tobacco.util.JwtTokenUtil;
-import io.jsonwebtoken.Claims;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 @Component
 public class AuthInterceptor implements HandlerInterceptor {
 
-    private final JwtTokenUtil jwtTokenUtil;
+    private final JdbcTemplate jdbcTemplate;
 
-    public AuthInterceptor(JwtTokenUtil jwtTokenUtil) {
-        this.jwtTokenUtil = jwtTokenUtil;
+    public AuthInterceptor(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         String uri = request.getRequestURI();
-        if (uri.startsWith("/api/auth/login") || uri.startsWith("/api/health")) {
+        if (uri.startsWith("/api/auth/login") || uri.startsWith("/api/auth/captcha") || uri.startsWith("/api/auth/forgot-password") || uri.startsWith("/api/auth/reset-password") || uri.startsWith("/api/health")) {
             return true;
         }
 
         String auth = request.getHeader("Authorization");
         if (auth == null || !auth.startsWith("Bearer ")) {
-            response.setStatus(401);
-            response.setContentType("application/json;charset=UTF-8");
-            response.getWriter().write("{\"code\":401,\"message\":\"未登录或令牌缺失\",\"data\":null}");
-            return false;
+            return unauthorized(response, "未登录或令牌缺失");
         }
+        String token = auth.substring(7);
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                "select session_token as token, user_id as userId, username, role_code as roleCode, expire_at as expireAt, status from user_sessions where session_token=? order by id desc limit 1",
+                token);
+        if (rows.isEmpty()) {
+            return unauthorized(response, "登录已过期或令牌无效");
+        }
+        Map<String, Object> row = rows.get(0);
+        Timestamp expireAt = (Timestamp) row.get("expireAt");
+        if (!"ACTIVE".equals(String.valueOf(row.get("status"))) || expireAt == null || expireAt.toLocalDateTime().isBefore(LocalDateTime.now())) {
+            return unauthorized(response, "登录已过期或令牌无效");
+        }
+        jdbcTemplate.update("update user_sessions set last_access_at=now() where session_token=?", token);
+        request.setAttribute("token", token);
+        request.setAttribute("userId", ((Number) row.get("userId")).longValue());
+        request.setAttribute("username", String.valueOf(row.get("username")));
+        request.setAttribute("roleCode", String.valueOf(row.get("roleCode")));
+        return true;
+    }
 
-        try {
-            Claims claims = jwtTokenUtil.parseToken(auth.substring(7));
-            request.setAttribute("userId", claims.get("userId"));
-            request.setAttribute("username", claims.getSubject());
-            request.setAttribute("roleCode", claims.get("roleCode"));
-            return true;
-        } catch (Exception ex) {
-            response.setStatus(401);
-            response.setContentType("application/json;charset=UTF-8");
-            response.getWriter().write("{\"code\":401,\"message\":\"登录已过期或令牌无效\",\"data\":null}");
-            return false;
-        }
+    private boolean unauthorized(HttpServletResponse response, String message) throws Exception {
+        response.setStatus(401);
+        response.setContentType("application/json;charset=UTF-8");
+        response.getWriter().write("{\"code\":401,\"message\":\"" + message + "\",\"data\":null}");
+        return false;
     }
 }

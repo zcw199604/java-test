@@ -10,8 +10,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/reports")
@@ -23,31 +23,34 @@ public class ReportController {
     }
 
     @GetMapping("/purchase-summary")
-    public ApiResponse<ReportSummaryItem> purchaseSummary() {
-        return ApiResponse.success(reportService.purchaseSummary());
-    }
+    public ApiResponse<ReportSummaryItem> purchaseSummary() { return ApiResponse.success(reportService.purchaseSummary()); }
 
     @GetMapping("/sales-summary")
-    public ApiResponse<ReportSummaryItem> salesSummary() {
-        return ApiResponse.success(reportService.salesSummary());
-    }
+    public ApiResponse<ReportSummaryItem> salesSummary() { return ApiResponse.success(reportService.salesSummary()); }
 
     @GetMapping("/inventory-summary")
-    public ApiResponse<ReportSummaryItem> inventorySummary() {
-        return ApiResponse.success(reportService.inventorySummary());
-    }
+    public ApiResponse<ReportSummaryItem> inventorySummary() { return ApiResponse.success(reportService.inventorySummary()); }
 
     @GetMapping("/trend")
-    public ApiResponse<List<TrendPoint>> trend() {
-        return ApiResponse.success(reportService.trend());
-    }
+    public ApiResponse<List<TrendPoint>> trend() { return ApiResponse.success(reportService.trend()); }
 
-    @GetMapping(value = "/export", produces = "text/csv;charset=UTF-8")
+    @GetMapping("/psi-summary")
+    public ApiResponse<Map<String, Object>> psiSummary() { return ApiResponse.success(reportService.psiSummary()); }
+
+    @GetMapping("/compliance-trace")
+    public ApiResponse<List<Map<String, Object>>> complianceTrace() { return ApiResponse.success(reportService.complianceTrace()); }
+
+    @GetMapping("/abnormal-docs")
+    public ApiResponse<List<Map<String, Object>>> abnormalDocs() { return ApiResponse.success(reportService.abnormalDocs()); }
+
+    @GetMapping("/linkage")
+    public ApiResponse<Map<String, Object>> linkage() { return ApiResponse.success(reportService.linkage()); }
+
+    @GetMapping("/export")
     public ResponseEntity<byte[]> exportData() {
-        byte[] body = reportService.exportCsv().getBytes(StandardCharsets.UTF_8);
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=report-summary.csv")
-                .contentType(new MediaType("text", "csv", StandardCharsets.UTF_8))
-                .body(body);
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=report-summary.xlsx")
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(reportService.exportExcel());
     }
 }

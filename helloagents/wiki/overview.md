@@ -5,22 +5,22 @@
 ## 1. 项目概述
 
 ### 目标与背景
-基于毕业设计任务书，项目已实现一个采用 Vue + Spring Boot + MySQL 的前后端分离采销存协同平台，可用于登录演示、基础管理、采购、库存、销售和报表联调。
+项目已从“最小演示闭环”升级为“任务书对齐”的采销存协同平台后端，重点补齐认证权限、日志审计、系统配置、Excel 导入导出、采购/销售/库存完整流程、合规追溯与异常监控能力。
 
 ### 范围
-- **范围内:** 登录认证、用户角色、品类商品、供应商客户、采购到货与入库、库存预警、销售回款、首页概览、CSV 报表导出与趋势展示
-- **范围外:** 复杂审批流、生产级权限点细粒度控制、正式部署编排
+- **范围内:** 登录认证、验证码、忘记/重置密码、RBAC、用户/角色/权限/配置/仓库、采购需求与采购单全流程、销售信息发布与销售单全流程、库存维护与预警、消息通知、日志审计、采销存统计、追溯与异常单据、Excel 批处理
+- **范围外:** 前端响应式细节、短信/邮件真实发送、分布式部署与多实例会话同步
 
 ## 2. 模块索引
 
 | 模块名称 | 职责 | 状态 | 文档 |
 |---------|------|------|------|
-| backend | REST API 与业务实现 | ✅稳定 | [backend](modules/backend.md) |
+| backend | REST API 与业务实现 | 🚧开发中 | [backend](modules/backend.md) |
+| procurement | 采购业务 | 🚧开发中 | [procurement](modules/procurement.md) |
+| inventory | 库存业务 | 🚧开发中 | [inventory](modules/inventory.md) |
+| sales | 销售业务 | 🚧开发中 | [sales](modules/sales.md) |
+| admin | 系统管理、权限、日志与报表 | 🚧开发中 | [admin](modules/admin.md) |
 | frontend | Vue 页面与交互 | ✅稳定 | [frontend](modules/frontend.md) |
-| procurement | 采购业务 | ✅稳定 | [procurement](modules/procurement.md) |
-| inventory | 库存业务 | ✅稳定 | [inventory](modules/inventory.md) |
-| sales | 销售业务 | ✅稳定 | [sales](modules/sales.md) |
-| admin | 系统管理与报表 | ✅稳定 | [admin](modules/admin.md) |
 
 ## 3. 快速链接
 - [技术约定](../project.md)

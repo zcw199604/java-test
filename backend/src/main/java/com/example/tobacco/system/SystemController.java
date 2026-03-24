@@ -1,11 +1,7 @@
 package com.example.tobacco.system;
 
 import com.example.tobacco.common.result.ApiResponse;
-import com.example.tobacco.model.RoleItem;
-import com.example.tobacco.model.RoleRequest;
 import com.example.tobacco.model.UserProfile;
-import com.example.tobacco.model.UserRequest;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,23 +13,88 @@ public class SystemController {
 
     private final SystemService systemService;
 
-    public SystemController(SystemService systemService) { this.systemService = systemService; }
+    public SystemController(SystemService systemService) {
+        this.systemService = systemService;
+    }
 
     @GetMapping("/users")
     public ApiResponse<List<UserProfile>> users() { return ApiResponse.success(systemService.listUsers()); }
 
+    @GetMapping("/users/{id}")
+    public ApiResponse<Map<String, Object>> userDetail(@PathVariable Long id) { return ApiResponse.success(systemService.userDetail(id)); }
+
     @PostMapping("/users")
-    public ApiResponse<String> createUser(@Validated @RequestBody UserRequest request) { systemService.createUser(request); return ApiResponse.success("ok"); }
+    public ApiResponse<String> createUser(@RequestBody Map<String, String> request, @RequestAttribute("userId") Long userId, @RequestAttribute("username") String username) {
+        systemService.createUser(request, userId, username);
+        return ApiResponse.success("ok");
+    }
+
+    @PutMapping("/users/{id}")
+    public ApiResponse<String> updateUser(@PathVariable Long id, @RequestBody Map<String, String> request, @RequestAttribute("userId") Long userId, @RequestAttribute("username") String username) {
+        systemService.updateUser(id, request, userId, username);
+        return ApiResponse.success("ok");
+    }
 
     @PutMapping("/users/{id}/status")
-    public ApiResponse<String> updateUserStatus(@PathVariable Long id, @RequestBody Map<String, String> body) {
-        systemService.updateUserStatus(id, body.getOrDefault("status", "ENABLED"));
+    public ApiResponse<String> updateUserStatus(@PathVariable Long id, @RequestBody Map<String, String> body, @RequestAttribute("userId") Long userId, @RequestAttribute("username") String username) {
+        systemService.updateUserStatus(id, body.getOrDefault("status", "ENABLED"), userId, username);
         return ApiResponse.success("ok");
     }
 
     @GetMapping("/roles")
-    public ApiResponse<List<RoleItem>> roles() { return ApiResponse.success(systemService.listRoles()); }
+    public ApiResponse<List<Map<String, Object>>> roles() { return ApiResponse.success(systemService.listRoles()); }
 
     @PostMapping("/roles")
-    public ApiResponse<String> createRole(@Validated @RequestBody RoleRequest request) { systemService.createRole(request); return ApiResponse.success("ok"); }
+    public ApiResponse<String> createRole(@RequestBody Map<String, String> request, @RequestAttribute("userId") Long userId, @RequestAttribute("username") String username) {
+        systemService.createRole(request, userId, username);
+        return ApiResponse.success("ok");
+    }
+
+    @PutMapping("/roles/{code}")
+    public ApiResponse<String> updateRole(@PathVariable String code, @RequestBody Map<String, Object> request, @RequestAttribute("userId") Long userId, @RequestAttribute("username") String username) {
+        systemService.updateRole(code, request, userId, username);
+        return ApiResponse.success("ok");
+    }
+
+    @GetMapping("/permissions")
+    public ApiResponse<List<Map<String, Object>>> permissions() { return ApiResponse.success(systemService.listPermissions()); }
+
+    @PostMapping("/permissions")
+    public ApiResponse<String> createPermission(@RequestBody Map<String, String> request, @RequestAttribute("userId") Long userId, @RequestAttribute("username") String username) {
+        systemService.createPermission(request, userId, username);
+        return ApiResponse.success("ok");
+    }
+
+    @GetMapping("/configs")
+    public ApiResponse<List<Map<String, Object>>> configs() { return ApiResponse.success(systemService.listConfigs()); }
+
+    @PutMapping("/configs/{key}")
+    public ApiResponse<String> updateConfig(@PathVariable String key, @RequestBody Map<String, String> request, @RequestAttribute("userId") Long userId, @RequestAttribute("username") String username) {
+        systemService.updateConfig(key, request, userId, username);
+        return ApiResponse.success("ok");
+    }
+
+    @GetMapping("/profile")
+    public ApiResponse<Map<String, Object>> profile(@RequestAttribute("username") String username) { return ApiResponse.success(systemService.profile(username)); }
+
+    @PutMapping("/profile")
+    public ApiResponse<String> updateProfile(@RequestBody Map<String, String> request, @RequestAttribute("username") String username, @RequestAttribute("userId") Long userId) {
+        systemService.updateProfile(username, request, userId);
+        return ApiResponse.success("ok");
+    }
+
+    @PostMapping("/profile/password")
+    public ApiResponse<String> changePassword(@RequestBody Map<String, String> request, @RequestAttribute("username") String username, @RequestAttribute("userId") Long userId) {
+        systemService.changePassword(username, request.get("oldPassword"), request.get("newPassword"), userId);
+        return ApiResponse.success("ok");
+    }
+
+    @GetMapping("/warehouses")
+    public ApiResponse<List<Map<String, Object>>> warehouses() { return ApiResponse.success(systemService.warehouses()); }
+
+    @PostMapping("/warehouses")
+    public ApiResponse<String> createWarehouse(@RequestBody Map<String, String> request, @RequestAttribute("userId") Long userId, @RequestAttribute("username") String username) {
+        systemService.createWarehouse(request, userId, username);
+        return ApiResponse.success("ok");
+    }
 }

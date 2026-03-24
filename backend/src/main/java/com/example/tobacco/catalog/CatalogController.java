@@ -22,15 +22,24 @@ public class CatalogController {
     @GetMapping("/api/products")
     public ApiResponse<List<ProductItem>> listProducts() { return ApiResponse.success(catalogService.listProducts()); }
 
+    @GetMapping("/api/products/{id}")
+    public ApiResponse<ProductItem> productDetail(@PathVariable Long id) { return ApiResponse.success(catalogService.productDetail(id)); }
+
     @PostMapping("/api/products")
     public ApiResponse<String> createProduct(@Validated @RequestBody ProductRequest request) { catalogService.createProduct(request); return ApiResponse.success("ok"); }
 
     @PutMapping("/api/products/{id}")
     public ApiResponse<String> updateProduct(@PathVariable Long id, @Validated @RequestBody ProductRequest request) { catalogService.updateProduct(id, request); return ApiResponse.success("ok"); }
 
+    @DeleteMapping("/api/products/{id}")
+    public ApiResponse<String> deleteProduct(@PathVariable Long id) { catalogService.deleteProduct(id); return ApiResponse.success("ok"); }
+
     @GetMapping("/api/categories")
     public ApiResponse<List<CategoryItem>> listCategories() { return ApiResponse.success(catalogService.listCategories()); }
 
     @PostMapping("/api/categories")
     public ApiResponse<String> createCategory(@Validated @RequestBody CategoryRequest request) { catalogService.createCategory(request); return ApiResponse.success("ok"); }
+
+    @PutMapping("/api/categories/{id}")
+    public ApiResponse<String> updateCategory(@PathVariable Long id, @Validated @RequestBody CategoryRequest request) { catalogService.updateCategory(id, request); return ApiResponse.success("ok"); }
 }

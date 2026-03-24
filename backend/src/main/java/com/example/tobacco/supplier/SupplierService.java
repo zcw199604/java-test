@@ -22,10 +22,14 @@ public class SupplierService {
     }
 
     public void createSupplier(SupplierRequest request) {
-        jdbcTemplate.update("insert into suppliers(name, contact_name, contact_phone, address, status) values(?,?,?,?, 'ENABLED')", request.getName(), request.getContactName(), request.getContactPhone(), request.getAddress());
+        jdbcTemplate.update("insert into suppliers(name,contact_name,contact_phone,address,status) values(?,?,?,?, 'ENABLED')", request.getName(), request.getContactName(), request.getContactPhone(), request.getAddress());
     }
 
     public void updateSupplier(Long id, SupplierRequest request) {
         jdbcTemplate.update("update suppliers set name=?, contact_name=?, contact_phone=?, address=? where id=?", request.getName(), request.getContactName(), request.getContactPhone(), request.getAddress(), id);
+    }
+
+    public void disableSupplier(Long id) {
+        jdbcTemplate.update("update suppliers set status='DISABLED' where id=?", id);
     }
 }

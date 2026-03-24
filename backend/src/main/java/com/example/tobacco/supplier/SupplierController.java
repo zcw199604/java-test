@@ -24,4 +24,7 @@ public class SupplierController {
 
     @PutMapping("/{id}")
     public ApiResponse<String> update(@PathVariable Long id, @Validated @RequestBody SupplierRequest request) { supplierService.updateSupplier(id, request); return ApiResponse.success("ok"); }
+
+    @DeleteMapping("/{id}")
+    public ApiResponse<String> disable(@PathVariable Long id) { supplierService.disableSupplier(id); return ApiResponse.success("ok"); }
 }

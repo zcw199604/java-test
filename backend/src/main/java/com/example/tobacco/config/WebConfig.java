@@ -20,13 +20,20 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addMapping("/api/**")
                 .allowedOrigins("http://localhost:5173")
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                .allowedHeaders("*");
+                .allowedHeaders("*")
+                .allowCredentials(false);
     }
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(authInterceptor)
                 .addPathPatterns("/api/**")
-                .excludePathPatterns("/api/auth/login", "/api/health");
+                .excludePathPatterns(
+                        "/api/auth/login",
+                        "/api/auth/captcha",
+                        "/api/auth/forgot-password",
+                        "/api/auth/reset-password",
+                        "/api/health"
+                );
     }
 }

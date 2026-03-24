@@ -3,7 +3,6 @@ package com.example.tobacco.auth;
 import java.util.List;
 
 public class LoginResponse {
-
     private String token;
     private Long userId;
     private String username;
@@ -11,6 +10,7 @@ public class LoginResponse {
     private String roleCode;
     private String roleName;
     private List<String> menus;
+    private List<String> permissions;
 
     public String getToken() { return token; }
     public void setToken(String token) { this.token = token; }
@@ -26,4 +26,6 @@ public class LoginResponse {
     public void setRoleName(String roleName) { this.roleName = roleName; }
     public List<String> getMenus() { return menus; }
     public void setMenus(List<String> menus) { this.menus = menus; }
+    public List<String> getPermissions() { return permissions; }
+    public void setPermissions(List<String> permissions) { this.permissions = permissions; }
 }

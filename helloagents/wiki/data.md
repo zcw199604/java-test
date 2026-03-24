@@ -1,33 +1,42 @@
 # 数据模型
 
 ## 概述
-当前系统通过 MySQL 运行，已具备系统管理、基础资料、采购、库存、销售、报表所需的核心表结构。
+当前系统围绕“认证权限、系统管理、采销存业务、日志消息、追溯异常、Excel 批处理”扩展了完整 MySQL 数据表集合。
 
-## 数据表
+## 核心表
 - `roles`：角色定义
-- `users`：系统用户
-- `categories`：商品品类
-- `products`：商品资料
-- `suppliers`：供应商资料
-- `customers`：客户资料
-- `purchase_orders`：采购单（含创建、到货、入库状态与时间）
-- `inventories`：库存台账
-- `inventory_records`：库存流水
-- `sales_orders`：销售单
-- `payment_records`：回款记录
+- `permissions` / `role_permissions`：权限点与角色权限关系
+- `users` / `user_data_scopes` / `user_sessions`：用户、数据范围、登录会话
+- `captcha_records` / `password_reset_records`：验证码与重置密码流程
+- `login_logs` / `operation_logs`：登录日志与操作日志
+- `system_configs`：系统配置
+- `messages`：站内消息
+- `categories` / `products` / `suppliers` / `customers` / `warehouses`：基础主数据
+- `purchase_requisitions` / `purchase_orders` / `purchase_order_tracks`：采购需求、采购单、采购跟踪
+- `sales_publishings` / `sales_orders` / `payment_records` / `receivable_records`：销售发布、销售单、回款、应收
+- `inventories` / `inventory_records` / `inventory_check_reports` / `warning_records`：库存台账、流水、盘点、预警
+- `trace_records` / `abnormal_documents`：全链路追溯与异常单据
 
 ## 关键关系
 - `users.role_code -> roles.code`
+- `role_permissions.role_code -> roles.code`
+- `role_permissions.permission_code -> permissions.code`
+- `purchase_orders.requisition_id -> purchase_requisitions.id`
 - `purchase_orders.supplier_id -> suppliers.id`
 - `purchase_orders.product_id -> products.id`
-- `inventories.product_id -> products.id`
-- `inventory_records.product_id -> products.id`
+- `sales_orders.publish_id -> sales_publishings.id`
 - `sales_orders.customer_id -> customers.id`
 - `sales_orders.product_id -> products.id`
+- `inventories.product_id -> products.id`
+- `inventories.warehouse_id -> warehouses.id`
+- `inventory_records.product_id -> products.id`
 - `payment_records.sales_order_id -> sales_orders.id`
+- `receivable_records.sales_order_id -> sales_orders.id`
+- `messages.biz_id / trace_records.biz_id / abnormal_documents.biz_id` 指向对应业务主键
 
 ## 业务链路
-1. 创建采购单 → 登记到货 → 采购入库后更新 `inventories` 并写入 `inventory_records`
-2. 创建销售单 → 出库后扣减 `inventories` 并写入 `inventory_records`
-3. 回款登记 → 更新 `sales_orders.paid_amount` 与订单状态
-4. 报表汇总 → 聚合采购、销售、库存数据并导出 CSV
+1. 用户登录 → 写入 `user_sessions`、`login_logs`
+2. 采购提报 → 建采购单 → 审核 → 到货 → 入库 → 写 `purchase_order_tracks`、`inventory_records`、`trace_records`
+3. 销售信息发布 → 建销售单 → 审核 → 出库 → 回款 → 写 `payment_records`、`receivable_records`、`trace_records`
+4. 库存调拨 / 盘点 → 写 `inventory_records`、`inventory_check_reports`、`warning_records`
+5. 异常审核 / 合规追溯 → 聚合 `trace_records` 与 `abnormal_documents`

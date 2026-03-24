@@ -1,70 +1,115 @@
 # API 手册
 
 ## 概述
-当前系统已形成前后端可联调的完整最小闭环，覆盖认证、系统管理、基础资料、采购、库存、销售、报表等模块。
+当前系统已形成面向任务书的后端接口集合，覆盖认证、系统管理、基础资料、采购、销售、库存、报表、日志、消息与追溯等模块。
 
 ## 认证方式
 - 登录接口：`POST /api/auth/login`
 - 鉴权方式：`Authorization: Bearer <token>`
 - 当前登录态：`GET /api/auth/profile`
+- 辅助接口：`GET /api/auth/captcha`、`POST /api/auth/forgot-password`、`POST /api/auth/reset-password`
 
 ---
 
 ## 核心接口
 
 ### 认证与系统
-- `POST /api/auth/login`：登录
-- `GET /api/auth/profile`：当前用户信息
-- `POST /api/auth/logout`：退出登录
-- `GET /api/users`：用户列表
-- `POST /api/users`：新增用户
-- `PUT /api/users/{id}/status`：更新用户状态
-- `GET /api/roles`：角色列表
-- `POST /api/roles`：新增角色
+- `GET /api/auth/captcha`
+- `POST /api/auth/login`
+- `GET /api/auth/profile`
+- `POST /api/auth/logout`
+- `POST /api/auth/forgot-password`
+- `POST /api/auth/reset-password`
+- `GET /api/users`
+- `GET /api/users/{id}`
+- `POST /api/users`
+- `PUT /api/users/{id}`
+- `PUT /api/users/{id}/status`
+- `GET /api/roles`
+- `POST /api/roles`
+- `PUT /api/roles/{code}`
+- `GET /api/permissions`
+- `POST /api/permissions`
+- `GET /api/configs`
+- `PUT /api/configs/{key}`
+- `GET /api/profile`
+- `PUT /api/profile`
+- `POST /api/profile/password`
+- `GET /api/warehouses`
+- `POST /api/warehouses`
+
+### 日志与消息
+- `GET /api/logs/login`
+- `GET /api/logs/operation`
+- `GET /api/messages`
+- `POST /api/messages/{id}/read`
 
 ### 基础资料
-- `GET /api/categories`：品类列表
-- `POST /api/categories`：新增品类
-- `GET /api/products`：商品列表
-- `POST /api/products`：新增商品
-- `PUT /api/products/{id}`：更新商品
-- `GET /api/suppliers`：供应商列表
-- `POST /api/suppliers`：新增供应商
-- `PUT /api/suppliers/{id}`：更新供应商
-- `GET /api/customers`：客户列表
+- `GET /api/categories`
+- `POST /api/categories`
+- `PUT /api/categories/{id}`
+- `GET /api/products`
+- `GET /api/products/{id}`
+- `POST /api/products`
+- `PUT /api/products/{id}`
+- `DELETE /api/products/{id}`
+- `GET /api/suppliers`
+- `POST /api/suppliers`
+- `PUT /api/suppliers/{id}`
+- `DELETE /api/suppliers/{id}`
+- `GET /api/customers`
+- `POST /api/customers`
+- `PUT /api/customers/{id}`
+- `DELETE /api/customers/{id}`
 
 ### 采购管理
-- `GET /api/purchases`：采购单列表
-- `POST /api/purchases`：创建采购单
-- `POST /api/purchases/{id}/receive`：登记到货，状态更新为 `RECEIVED`
-- `POST /api/purchases/{id}/inbound`：采购入库，状态更新为 `INBOUND` 并写入库存流水
-
-### 库存管理
-- `GET /api/inventories`：库存台账
-- `GET /api/inventory-records`：库存流水
-- `GET /api/inventory-warnings`：库存预警
-- `POST /api/inventory-checks`：库存盘点
-- `POST /api/inventory-transfers`：库存调拨登记
+- `GET /api/purchase-requisitions`
+- `POST /api/purchase-requisitions`
+- `GET /api/purchases`
+- `POST /api/purchases`
+- `PUT /api/purchases/{id}`
+- `POST /api/purchases/{id}/audit`
+- `POST /api/purchases/{id}/cancel`
+- `POST /api/purchases/{id}/receive`
+- `POST /api/purchases/{id}/inbound`
+- `GET /api/purchases/{id}/trace`
+- `GET /api/purchases/analysis`
+- `GET /api/purchases/export`
+- `POST /api/purchases/import`
 
 ### 销售管理
-- `GET /api/sales`：销售单列表
-- `POST /api/sales`：创建销售单
-- `POST /api/sales/{id}/outbound`：销售出库
-- `POST /api/sales/{id}/payment`：回款登记
-- `GET /api/sales/statistics`：销售统计
+- `GET /api/sales-publishes`
+- `POST /api/sales-publishes`
+- `GET /api/sales`
+- `POST /api/sales`
+- `PUT /api/sales/{id}`
+- `POST /api/sales/{id}/audit`
+- `POST /api/sales/{id}/cancel`
+- `POST /api/sales/{id}/outbound`
+- `POST /api/sales/{id}/payment`
+- `GET /api/sales/receivables`
+- `GET /api/sales/statistics`
+- `GET /api/sales/export`
+- `POST /api/sales/import`
 
-### 报表模块
-- `GET /api/dashboard/summary`：首页概览（实时统计值）
-- `GET /api/reports/purchase-summary`：采购汇总
-- `GET /api/reports/sales-summary`：销售汇总
-- `GET /api/reports/inventory-summary`：库存汇总
-- `GET /api/reports/trend`：趋势数据
-- `GET /api/reports/export`：导出真实 CSV 内容
+### 库存管理
+- `GET /api/inventories`
+- `GET /api/inventories/export`
+- `POST /api/inventories/import`
+- `GET /api/inventory-records`
+- `GET /api/inventory-warnings`
+- `GET /api/inventory-warnings/history`
+- `POST /api/inventory-transfers`
+- `POST /api/inventory-checks`
 
-## 错误码
-| 错误码 | 说明 |
-|--------|------|
-| 0 | 成功 |
-| 400 | 参数错误或业务校验失败 |
-| 401 | 未登录或令牌失效 |
-| 500 | 服务器内部异常 |
+### 报表与追溯
+- `GET /api/dashboard/summary`
+- `GET /api/reports/purchase-summary`
+- `GET /api/reports/sales-summary`
+- `GET /api/reports/inventory-summary`
+- `GET /api/reports/trend`
+- `GET /api/reports/psi-summary`
+- `GET /api/reports/compliance-trace`
+- `GET /api/reports/abnormal-docs`
+- `GET /api/reports/linkage`
+- `GET /api/reports/export`

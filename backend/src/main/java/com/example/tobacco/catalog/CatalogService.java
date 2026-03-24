@@ -25,12 +25,22 @@ public class CatalogService {
                 new BeanPropertyRowMapper<ProductItem>(ProductItem.class));
     }
 
+    public ProductItem productDetail(Long id) {
+        return jdbcTemplate.queryForObject(
+                "select id, code, name, category, unit, unit_price as unitPrice, warning_threshold as warningThreshold, status from products where id=?",
+                new BeanPropertyRowMapper<ProductItem>(ProductItem.class), id);
+    }
+
     public List<CategoryItem> listCategories() {
         return jdbcTemplate.query("select id, name, remark, status from categories order by id", new BeanPropertyRowMapper<CategoryItem>(CategoryItem.class));
     }
 
     public void createCategory(CategoryRequest request) {
         jdbcTemplate.update("insert into categories(name, remark, status) values(?,?,'ENABLED')", request.getName(), request.getRemark());
+    }
+
+    public void updateCategory(Long id, CategoryRequest request) {
+        jdbcTemplate.update("update categories set name=?, remark=? where id=?", request.getName(), request.getRemark(), id);
     }
 
     public void createProduct(ProductRequest request) {
@@ -41,5 +51,9 @@ public class CatalogService {
     public void updateProduct(Long id, ProductRequest request) {
         jdbcTemplate.update("update products set code=?, name=?, category=?, unit=?, unit_price=?, warning_threshold=? where id=?",
                 request.getCode(), request.getName(), request.getCategory(), request.getUnit(), request.getUnitPrice(), request.getWarningThreshold(), id);
+    }
+
+    public void deleteProduct(Long id) {
+        jdbcTemplate.update("update products set status='DISABLED' where id=?", id);
     }
 }

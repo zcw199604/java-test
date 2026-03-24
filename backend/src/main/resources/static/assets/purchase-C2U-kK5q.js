@@ -1,0 +1,1 @@
+import{h as e}from"./index-C2JkUos_.js";const r=()=>e.get("/purchases"),a=s=>e.post("/purchases",s),t=s=>e.post(`/purchases/${s}/receive`),o=s=>e.post(`/purchases/${s}/inbound`);export{a as c,r as f,o as i,t as r};

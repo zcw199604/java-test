@@ -1,0 +1,36 @@
+:root {
+  color-scheme: light;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #f5f7fb;
+  color: #1f2937;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 1280px;
+  background: #f5f7fb;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.stack { display: flex; flex-direction: column; gap: 24px; }
+.form-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.form-grid label { display: flex; flex-direction: column; gap: 8px; }
+.form-grid input, .form-grid select { border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px 12px; font-size: 14px; }
+.primary-btn, .minor-btn { border: none; border-radius: 10px; padding: 10px 14px; color: #fff; cursor: pointer; }
+.primary-btn { background: #2563eb; }
+.minor-btn { background: #0f766e; margin-right: 10px; margin-top: 14px; }
+.minor-btn.success { background: #16a34a; }
+.action-list { display: flex; flex-wrap: wrap; }

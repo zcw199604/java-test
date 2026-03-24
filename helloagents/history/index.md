@@ -1,0 +1,25 @@
+# 变更历史索引
+
+本文件记录所有已完成变更的索引，便于追溯和查询。
+
+---
+
+## 索引
+
+| 时间戳 | 功能名称 | 类型 | 状态 | 方案包路径 |
+|--------|----------|------|------|------------|
+| 202603230000 | tobacco-platform-init | 功能 | ✅已完成 | [helloagents/history/2026-03/202603230000_tobacco-platform-init](2026-03/202603230000_tobacco-platform-init/) |
+| 202603231548 | full-platform-features | 功能 | ✅已完成 | [helloagents/history/2026-03/202603231548_full-platform-features](2026-03/202603231548_full-platform-features/) |
+| 202603240034 | doc-alignment-report-fix | 修复 | ✅已完成 | [helloagents/history/2026-03/202603240034_doc-alignment-report-fix](2026-03/202603240034_doc-alignment-report-fix/) |
+
+---
+
+## 按月归档
+
+### 2026-03
+
+- [202603230000_tobacco-platform-init](2026-03/202603230000_tobacco-platform-init/) - 初始化烟草采销存协同管理平台前后端分离工程
+
+- [202603231548_full-platform-features](2026-03/202603231548_full-platform-features/) - 完成前后端全模块最小闭环与 Docker MySQL 联调
+
+- [202603240034_doc-alignment-report-fix](2026-03/202603240034_doc-alignment-report-fix/) - 修正文档与代码差异，补齐真实 CSV 导出、采购到货/入库拆分与首页实时统计

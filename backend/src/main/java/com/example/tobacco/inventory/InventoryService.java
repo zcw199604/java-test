@@ -1,6 +1,7 @@
 package com.example.tobacco.inventory;
 
 import com.example.tobacco.audit.AuditService;
+import com.example.tobacco.message.MessageService;
 import com.example.tobacco.model.InventoryChangeRequest;
 import com.example.tobacco.model.InventoryItem;
 import com.example.tobacco.model.InventoryRecordItem;
@@ -20,11 +21,13 @@ public class InventoryService {
     private final JdbcTemplate jdbcTemplate;
     private final ExcelUtil excelUtil;
     private final AuditService auditService;
+    private final MessageService messageService;
 
-    public InventoryService(JdbcTemplate jdbcTemplate, ExcelUtil excelUtil, AuditService auditService) {
+    public InventoryService(JdbcTemplate jdbcTemplate, ExcelUtil excelUtil, AuditService auditService, MessageService messageService) {
         this.jdbcTemplate = jdbcTemplate;
         this.excelUtil = excelUtil;
         this.auditService = auditService;
+        this.messageService = messageService;
     }
 
     public List<InventoryItem> list() {
@@ -53,6 +56,7 @@ public class InventoryService {
         jdbcTemplate.update("insert into inventory_records(product_id,biz_type,biz_id,change_qty,before_qty,after_qty,operator_name,remark) values(?,?,?,?,?,?,?,?)",
                 request.getProductId(), "TRANSFER", null, -changeQty, beforeQty, afterQty, operatorName, request.getRemark());
         auditService.logOperation(findUserIdByUsername(operatorName), operatorName, "INVENTORY", "TRANSFER", "INVENTORY", request.getProductId(), "库存调拨，数量:" + changeQty);
+        checkAndNotifyWarning(request.getProductId(), afterQty);
         return "调拨完成，库存已扣减" + changeQty;
     }
 
@@ -65,6 +69,7 @@ public class InventoryService {
         jdbcTemplate.update("insert into inventory_records(product_id,biz_type,biz_id,change_qty,before_qty,after_qty,operator_name,remark) values(?,?,?,?,?,?,?,?)",
                 request.getProductId(), "CHECK", null, afterQty - beforeQty, beforeQty, afterQty, operatorName, request.getRemark());
         auditService.logOperation(findUserIdByUsername(operatorName), operatorName, "INVENTORY", "CHECK", "INVENTORY", request.getProductId(), "库存盘点，结果:" + afterQty);
+        checkAndNotifyWarning(request.getProductId(), afterQty);
         return "盘点结果已更新";
     }
 
@@ -109,6 +114,21 @@ public class InventoryService {
         return result;
     }
 
+
+    private void checkAndNotifyWarning(Long productId, int currentQty) {
+        try {
+            Integer threshold = jdbcTemplate.queryForObject("select warning_threshold from inventories where product_id=?", Integer.class, productId);
+            if (threshold != null && currentQty <= threshold) {
+                String productName = jdbcTemplate.queryForObject("select name from products where id=?", String.class, productId);
+                String title = "库存预警: " + productName + " 当前库存" + currentQty + "，低于阈值" + threshold;
+                List<Long> keeperIds = jdbcTemplate.queryForList("select id from users where role_code='KEEPER' and status='ENABLED'", Long.class);
+                for (Long keeperId : keeperIds) {
+                    messageService.createMessage(keeperId, title, title, "ALERT", "INVENTORY", productId);
+                }
+            }
+        } catch (Exception ignored) {
+        }
+    }
 
     private Long findUserIdByUsername(String username) {
         try {

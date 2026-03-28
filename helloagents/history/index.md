@@ -19,6 +19,7 @@
 | 202603280803 | account-role-management-fix | 修复 | ✅已完成 | [helloagents/history/2026-03/202603280803_account-role-management-fix](2026-03/202603280803_account-role-management-fix/) |
 | 202603280851 | audit-log-and-user-delete | 修复 | ✅已完成 | [helloagents/history/2026-03/202603280851_audit-log-and-user-delete](2026-03/202603280851_audit-log-and-user-delete/) |
 | 202603281130 | approval-and-inventory-check-fix | 修复 | ✅已完成 | [helloagents/history/2026-03/202603281130_approval-and-inventory-check-fix](2026-03/202603281130_approval-and-inventory-check-fix/) |
+| 202603281130a | inventory-warning-notify-fix | 修复 | ✅已完成 | [helloagents/history/2026-03/202603281130_inventory-warning-notify-fix](2026-03/202603281130_inventory-warning-notify-fix/) |
 | 202603281045 | role-hierarchy-fix | 修复 | ✅已完成 | [helloagents/history/2026-03/202603281045_role-hierarchy-fix](2026-03/202603281045_role-hierarchy-fix/) |
 | 202603281120 | admin-account-protection | 修复 | ✅已完成 | [helloagents/history/2026-03/202603281120_admin-account-protection](2026-03/202603281120_admin-account-protection/) |
 
@@ -41,3 +42,4 @@
 - [202603281130_approval-and-inventory-check-fix](2026-03/202603281130_approval-and-inventory-check-fix/) - 补齐采购/销售审批确认角色限制、库管页面权限与库存盘点实际提交
 - [202603281045_role-hierarchy-fix](2026-03/202603281045_role-hierarchy-fix/) - 调整角色体系为五种并将默认 admin 切换为超级管理员
 - [202603281120_admin-account-protection](2026-03/202603281120_admin-account-protection/) - 限制普通管理员修改、停用和删除管理员类账号
+- [202603281130_inventory-warning-notify-fix](2026-03/202603281130_inventory-warning-notify-fix/) - 为库存调拨与盘点接入低库存预警消息通知

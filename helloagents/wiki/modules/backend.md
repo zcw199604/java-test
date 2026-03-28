@@ -30,3 +30,4 @@
 - 数据库初始化角色现为五种：SUPER_ADMIN、ADMIN、PURCHASER、SELLER、KEEPER；默认 `admin/123456` 为超级管理员，新增 `manager/123456` 作为普通管理员示例账号。
 - 用户创建与编辑接口现校验操作者角色：仅 `SUPER_ADMIN` 可分配 `SUPER_ADMIN` / `ADMIN`，避免普通管理员扩散管理员权限。
 - 管理员类账号保护已扩展到更新、状态变更与删除接口：非 `SUPER_ADMIN` 无法修改、停用或删除 `SUPER_ADMIN` / `ADMIN` 用户。
+- InventoryService 现已在调拨与盘点后复用库存预警通知逻辑，库存降至或低于阈值时同样向库管发送 ALERT 消息。

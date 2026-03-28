@@ -38,8 +38,8 @@ public class PurchaseController {
     }
 
     @PostMapping("/{id}/cancel")
-    public ApiResponse<PurchaseOrderItem> cancel(@PathVariable Long id, @RequestBody CancelRequest request) {
-        return ApiResponse.success(purchaseService.cancel(id, request.getReason()));
+    public ApiResponse<PurchaseOrderItem> cancel(@PathVariable Long id, @RequestBody CancelRequest request, HttpServletRequest httpRequest) {
+        return ApiResponse.success(purchaseService.cancel(id, request.getReason(), String.valueOf(httpRequest.getAttribute("username"))));
     }
 
     @PostMapping("/{id}/inbound")
@@ -48,8 +48,8 @@ public class PurchaseController {
     }
 
     @PostMapping("/{id}/receive")
-    public ApiResponse<PurchaseOrderItem> receive(@PathVariable Long id) {
-        return ApiResponse.success(purchaseService.receive(id));
+    public ApiResponse<PurchaseOrderItem> receive(@PathVariable Long id, HttpServletRequest httpRequest) {
+        return ApiResponse.success(purchaseService.receive(id, String.valueOf(httpRequest.getAttribute("username"))));
     }
 
     @PostMapping("/import")

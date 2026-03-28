@@ -26,6 +26,7 @@
           <el-button link :type="row.status === 'ENABLED' ? 'warning' : 'success'" @click="toggleStatus(row)">
             {{ row.status === 'ENABLED' ? '停用' : '启用' }}
           </el-button>
+          <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
         </template>
       </AppTable>
     </PageSection>
@@ -74,7 +75,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { createUser, fetchUserDetail, fetchUsers, fetchRoles, updateUser, updateUserStatus } from '../../api/system'
+import { createUser, deleteUser, fetchUserDetail, fetchUsers, fetchRoles, updateUser, updateUserStatus } from '../../api/system'
 import PageSection from '../../components/PageSection.vue'
 import AppTable from '../../components/AppTable.vue'
 
@@ -214,6 +215,17 @@ const toggleStatus = async (row) => {
   try {
     await updateUserStatus(row.id, { status: nextStatus })
     ElMessage.success(`账号已${nextStatus === 'ENABLED' ? '启用' : '停用'}`)
+    await loadData()
+  } catch (error) {
+    // 统一拦截器处理
+  }
+}
+
+const handleDelete = async (row) => {
+  await ElMessageBox.confirm(`确认永久删除账号“${row.username}”吗？此操作不可恢复。`, '删除账号', { type: 'warning' })
+  try {
+    await deleteUser(row.id)
+    ElMessage.success('账号已删除')
     await loadData()
   } catch (error) {
     // 统一拦截器处理

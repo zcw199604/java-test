@@ -86,6 +86,7 @@ public class SalesService {
         jdbcTemplate.update("update sales_orders set status=?, audited_by=?, audited_at=now(), audit_remark=? where id=?",
                 newStatus, operator, remark, id);
         auditService.trace("SALES", id, item.getOrderNo(), "AUDIT", "审核销售单", operator, newStatus + ": " + (remark == null ? "" : remark));
+        auditService.logOperation(findUserIdByUsername(operator), operator, "SALES", "AUDIT", "SALES", id, "审核销售单:" + newStatus);
         Long creatorId = findUserIdByUsername(item.getCreatedBy());
         if (creatorId != null) {
             String title = "APPROVED".equals(newStatus)
@@ -105,6 +106,7 @@ public class SalesService {
         }
         jdbcTemplate.update("update sales_orders set status='CANCELLED', cancel_reason=? where id=?", reason, id);
         auditService.trace("SALES", id, item.getOrderNo(), "CANCEL", "取消销售单", username, reason == null ? "" : reason);
+        auditService.logOperation(findUserIdByUsername(username), username, "SALES", "CANCEL", "SALES", id, "取消销售单");
         return detail(id);
     }
 
@@ -126,6 +128,7 @@ public class SalesService {
         jdbcTemplate.update("insert into inventory_records(product_id,biz_type,biz_id,change_qty,before_qty,after_qty,operator_name,remark) values(?,?,?,?,?,?,?,?)",
                 item.getProductId(), "SALES_OUTBOUND", id, -item.getQuantity(), beforeQty, afterQty, username, "销售出库");
         auditService.trace("SALES", id, item.getOrderNo(), "OUTBOUND", "销售出库", username, "出库数量: " + item.getQuantity());
+        auditService.logOperation(findUserIdByUsername(username), username, "SALES", "OUTBOUND", "SALES", id, "销售出库，数量:" + item.getQuantity());
         checkAndNotifyWarning(item.getProductId(), afterQty);
         return detail(id);
     }
@@ -139,6 +142,7 @@ public class SalesService {
         jdbcTemplate.update("update sales_orders set paid_amount=?, status=? where id=?", paid, status, id);
         jdbcTemplate.update("insert into payment_records(sales_order_id, amount, payer_name, remark) values(?,?,?,?)", id, request.getAmount(), request.getPayerName(), request.getRemark());
         auditService.trace("SALES", id, item.getOrderNo(), "PAYMENT", "销售回款", username, "回款金额: " + request.getAmount());
+        auditService.logOperation(findUserIdByUsername(username), username, "SALES", "PAYMENT", "SALES", id, "销售回款，金额:" + request.getAmount());
         return detail(id);
     }
 

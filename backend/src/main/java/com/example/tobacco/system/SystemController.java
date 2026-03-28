@@ -41,6 +41,12 @@ public class SystemController {
         return ApiResponse.success("ok");
     }
 
+    @DeleteMapping("/users/{id}")
+    public ApiResponse<String> deleteUser(@PathVariable Long id, @RequestAttribute("userId") Long userId, @RequestAttribute("username") String username) {
+        systemService.deleteUser(id, userId, username);
+        return ApiResponse.success("ok");
+    }
+
     @GetMapping("/roles")
     public ApiResponse<List<Map<String, Object>>> roles() { return ApiResponse.success(systemService.listRoles()); }
 

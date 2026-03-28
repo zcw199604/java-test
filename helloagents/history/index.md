@@ -17,6 +17,7 @@
 | 202603281000 | platform-integrity-fix | 修复 | ✅已完成 | [helloagents/history/2026-03/202603281000_platform-integrity-fix](2026-03/202603281000_platform-integrity-fix/) |
 | 202603280644 | catalog-supplier-maintenance | 修复 | ✅已完成 | [helloagents/history/2026-03/202603280644_catalog-supplier-maintenance](2026-03/202603280644_catalog-supplier-maintenance/) |
 | 202603280803 | account-role-management-fix | 修复 | ✅已完成 | [helloagents/history/2026-03/202603280803_account-role-management-fix](2026-03/202603280803_account-role-management-fix/) |
+| 202603280851 | audit-log-and-user-delete | 修复 | ✅已完成 | [helloagents/history/2026-03/202603280851_audit-log-and-user-delete](2026-03/202603280851_audit-log-and-user-delete/) |
 
 ---
 
@@ -33,3 +34,4 @@
 - [202603281000_platform-integrity-fix](2026-03/202603281000_platform-integrity-fix/) - 补齐平台完整性缺口：订单审核取消、Excel 导入、消息推送、库存调拨、公告发布与异常审核
 - [202603280644_catalog-supplier-maintenance](2026-03/202603280644_catalog-supplier-maintenance/) - 补齐商品/供应商维护、列表过滤与管理页路由回退
 - [202603280803_account-role-management-fix](2026-03/202603280803_account-role-management-fix/) - 修复账号管理与角色权限能力，支持角色切换与权限回显保存
+- [202603280851_audit-log-and-user-delete](2026-03/202603280851_audit-log-and-user-delete/) - 补齐业务操作日志并新增删除用户能力

@@ -20,3 +20,6 @@
 - 账号管理相关接口已按当前 schema 修正：`/api/users`、`/api/users/{id}`、`POST /api/users`、`PUT /api/users/{id}`、`PUT /api/users/{id}/status` 可正常使用。
 - 角色列表接口 `GET /api/roles` 现返回每个角色已有的权限数组，便于前端回显权限树。
 - 初始化数据 `data.sql` 已补充 `permissions` 与 `role_permissions` 的基础种子。
+
+- 采购/销售/库存关键业务动作现已同时写入 `operation_logs`，覆盖审批、到货、入库、出库、回款、调拨与盘点。
+- 用户删除接口 `DELETE /api/users/{id}` 已提供，并在删除前清理会话与数据范围。

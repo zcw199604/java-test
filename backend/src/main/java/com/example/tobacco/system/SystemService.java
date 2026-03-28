@@ -91,6 +91,16 @@ public class SystemService {
         auditService.logOperation(operatorId, operatorName, "SYSTEM", "UPDATE_USER_STATUS", "USER", id, "更新用户状态为" + targetStatus);
     }
 
+    @Transactional
+    public void deleteUser(Long id, Long operatorId, String operatorName) {
+        Map<String, Object> user = jdbcTemplate.queryForMap("select username from users where id=?", id);
+        String username = String.valueOf(user.get("username"));
+        jdbcTemplate.update("delete from user_data_scopes where user_id=?", id);
+        jdbcTemplate.update("delete from user_sessions where user_id=?", id);
+        jdbcTemplate.update("delete from users where id=?", id);
+        auditService.logOperation(operatorId, operatorName, "SYSTEM", "DELETE_USER", "USER", id, "删除用户" + username);
+    }
+
     public List<Map<String, Object>> listRoles() {
         List<Map<String, Object>> roles = jdbcTemplate.queryForList("select id, code, name, remark from roles order by id");
         for (Map<String, Object> role : roles) {

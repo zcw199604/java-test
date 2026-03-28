@@ -1,5 +1,6 @@
 package com.example.tobacco.inventory;
 
+import com.example.tobacco.audit.AuditService;
 import com.example.tobacco.model.InventoryChangeRequest;
 import com.example.tobacco.model.InventoryItem;
 import com.example.tobacco.model.InventoryRecordItem;
@@ -18,10 +19,12 @@ import java.util.Map;
 public class InventoryService {
     private final JdbcTemplate jdbcTemplate;
     private final ExcelUtil excelUtil;
+    private final AuditService auditService;
 
-    public InventoryService(JdbcTemplate jdbcTemplate, ExcelUtil excelUtil) {
+    public InventoryService(JdbcTemplate jdbcTemplate, ExcelUtil excelUtil, AuditService auditService) {
         this.jdbcTemplate = jdbcTemplate;
         this.excelUtil = excelUtil;
+        this.auditService = auditService;
     }
 
     public List<InventoryItem> list() {
@@ -49,6 +52,7 @@ public class InventoryService {
         jdbcTemplate.update("update inventories set quantity=? where product_id=?", afterQty, request.getProductId());
         jdbcTemplate.update("insert into inventory_records(product_id,biz_type,biz_id,change_qty,before_qty,after_qty,operator_name,remark) values(?,?,?,?,?,?,?,?)",
                 request.getProductId(), "TRANSFER", null, -changeQty, beforeQty, afterQty, operatorName, request.getRemark());
+        auditService.logOperation(findUserIdByUsername(operatorName), operatorName, "INVENTORY", "TRANSFER", "INVENTORY", request.getProductId(), "库存调拨，数量:" + changeQty);
         return "调拨完成，库存已扣减" + changeQty;
     }
 
@@ -60,6 +64,7 @@ public class InventoryService {
         jdbcTemplate.update("update inventories set quantity=? where product_id=?", afterQty, request.getProductId());
         jdbcTemplate.update("insert into inventory_records(product_id,biz_type,biz_id,change_qty,before_qty,after_qty,operator_name,remark) values(?,?,?,?,?,?,?,?)",
                 request.getProductId(), "CHECK", null, afterQty - beforeQty, beforeQty, afterQty, operatorName, request.getRemark());
+        auditService.logOperation(findUserIdByUsername(operatorName), operatorName, "INVENTORY", "CHECK", "INVENTORY", request.getProductId(), "库存盘点，结果:" + afterQty);
         return "盘点结果已更新";
     }
 
@@ -102,5 +107,14 @@ public class InventoryService {
         result.put("failed", failed);
         result.put("errors", errors.toString());
         return result;
+    }
+
+
+    private Long findUserIdByUsername(String username) {
+        try {
+            return jdbcTemplate.queryForObject("select id from users where username=?", Long.class, username);
+        } catch (Exception ex) {
+            return null;
+        }
     }
 }

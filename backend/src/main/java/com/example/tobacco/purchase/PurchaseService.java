@@ -64,6 +64,7 @@ public class PurchaseService {
                 request.getQuantity(), request.getUnitPrice(), total, "CREATED", username);
         Long id = jdbcTemplate.queryForObject("select id from purchase_orders where order_no=?", Long.class, orderNo);
         auditService.trace("PURCHASE", id, orderNo, "CREATE", "创建采购单", username, "创建采购单");
+        auditService.logOperation(findUserIdByUsername(username), username, "PURCHASE", "CREATE", "PURCHASE", id, "创建采购单" + orderNo);
         return detail(id);
     }
 
@@ -84,6 +85,7 @@ public class PurchaseService {
         jdbcTemplate.update("update purchase_orders set status=?, audited_by=?, audited_at=now(), audit_remark=? where id=?",
                 newStatus, operator, remark, id);
         auditService.trace("PURCHASE", id, item.getOrderNo(), "AUDIT", "审核采购单", operator, newStatus + ": " + (remark == null ? "" : remark));
+        auditService.logOperation(findUserIdByUsername(operator), operator, "PURCHASE", "AUDIT", "PURCHASE", id, "审核采购单:" + newStatus);
         // 推送审核结果消息给创建者
         Long creatorId = findUserIdByUsername(item.getCreatedBy());
         if (creatorId != null) {
@@ -96,18 +98,19 @@ public class PurchaseService {
     }
 
     @Transactional
-    public PurchaseOrderItem cancel(Long id, String reason) {
+    public PurchaseOrderItem cancel(Long id, String reason, String operatorName) {
         PurchaseOrderItem item = detail(id);
         if (!"CREATED".equals(item.getStatus()) && !"REJECTED".equals(item.getStatus())) {
             throw new IllegalArgumentException("仅待审核或已驳回状态的采购单可取消");
         }
         jdbcTemplate.update("update purchase_orders set status='CANCELLED', cancel_reason=? where id=?", reason, id);
-        auditService.trace("PURCHASE", id, item.getOrderNo(), "CANCEL", "取消采购单", item.getCreatedBy(), reason == null ? "" : reason);
+        auditService.trace("PURCHASE", id, item.getOrderNo(), "CANCEL", "取消采购单", operatorName, reason == null ? "" : reason);
+        auditService.logOperation(findUserIdByUsername(operatorName), operatorName, "PURCHASE", "CANCEL", "PURCHASE", id, "取消采购单");
         return detail(id);
     }
 
     @Transactional
-    public PurchaseOrderItem receive(Long id) {
+    public PurchaseOrderItem receive(Long id, String operatorName) {
         PurchaseOrderItem item = detail(id);
         if ("INBOUND".equals(item.getStatus()) || "RECEIVED".equals(item.getStatus())) {
             return item;
@@ -116,7 +119,8 @@ public class PurchaseService {
             throw new IllegalArgumentException("采购单需审核通过后才能登记到货");
         }
         jdbcTemplate.update("update purchase_orders set status='RECEIVED', received_at=now() where id=? and status='APPROVED'", id);
-        auditService.trace("PURCHASE", id, item.getOrderNo(), "RECEIVE", "到货登记", item.getCreatedBy(), "到货登记");
+        auditService.trace("PURCHASE", id, item.getOrderNo(), "RECEIVE", "到货登记", operatorName, "到货登记");
+        auditService.logOperation(findUserIdByUsername(operatorName), operatorName, "PURCHASE", "RECEIVE", "PURCHASE", id, "采购到货登记");
         return detail(id);
     }
 
@@ -149,6 +153,7 @@ public class PurchaseService {
                 "insert into inventory_records(product_id,biz_type,biz_id,change_qty,before_qty,after_qty,operator_name,remark) values(?,?,?,?,?,?,?,?)",
                 item.getProductId(), "PURCHASE_INBOUND", id, item.getQuantity(), beforeQty, afterQty, operatorName, "采购单入库");
         auditService.trace("PURCHASE", id, item.getOrderNo(), "INBOUND", "采购入库", operatorName, "入库数量: " + item.getQuantity());
+        auditService.logOperation(findUserIdByUsername(operatorName), operatorName, "PURCHASE", "INBOUND", "PURCHASE", id, "采购入库，数量:" + item.getQuantity());
         // 库存预警检查
         checkAndNotifyWarning(item.getProductId(), afterQty);
         return detail(id);

@@ -78,8 +78,8 @@
 - `POST /api/purchases/import`
 
 ### 销售管理
-- `GET /api/sales-publishes`
-- `POST /api/sales-publishes`
+- `GET /api/bulletins`
+- `POST /api/bulletins`
 - `GET /api/sales`
 - `POST /api/sales`
 - `PUT /api/sales/{id}`
@@ -111,5 +111,6 @@
 - `GET /api/reports/psi-summary`
 - `GET /api/reports/compliance-trace`
 - `GET /api/reports/abnormal-docs`
+- `POST /api/reports/abnormal-docs/{id}/audit`
 - `GET /api/reports/linkage`
 - `GET /api/reports/export`

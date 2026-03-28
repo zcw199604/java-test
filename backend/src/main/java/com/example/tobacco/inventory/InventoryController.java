@@ -6,9 +6,11 @@ import com.example.tobacco.model.InventoryItem;
 import com.example.tobacco.model.InventoryRecordItem;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
@@ -26,8 +28,17 @@ public class InventoryController {
     public ApiResponse<List<InventoryItem>> warnings() { return ApiResponse.success(inventoryService.warnings()); }
 
     @PostMapping("/inventory-transfers")
-    public ApiResponse<String> transfer(@Validated @RequestBody InventoryChangeRequest request, HttpServletRequest httpRequest) { return ApiResponse.success(inventoryService.transfer(request, String.valueOf(httpRequest.getAttribute("username")))); }
+    public ApiResponse<String> transfer(@Validated @RequestBody InventoryChangeRequest request, HttpServletRequest httpRequest) {
+        return ApiResponse.success(inventoryService.transfer(request, String.valueOf(httpRequest.getAttribute("username"))));
+    }
 
     @PostMapping("/inventory-checks")
-    public ApiResponse<String> check(@Validated @RequestBody InventoryChangeRequest request, HttpServletRequest httpRequest) { return ApiResponse.success(inventoryService.check(request, String.valueOf(httpRequest.getAttribute("username")))); }
+    public ApiResponse<String> check(@Validated @RequestBody InventoryChangeRequest request, HttpServletRequest httpRequest) {
+        return ApiResponse.success(inventoryService.check(request, String.valueOf(httpRequest.getAttribute("username"))));
+    }
+
+    @PostMapping("/inventories/import")
+    public ApiResponse<Map<String, Object>> importExcel(@RequestParam("file") MultipartFile file, HttpServletRequest httpRequest) {
+        return ApiResponse.success(inventoryService.importFromExcel(file, String.valueOf(httpRequest.getAttribute("username"))));
+    }
 }

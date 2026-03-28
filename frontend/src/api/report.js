@@ -7,6 +7,7 @@ export const fetchTrend = () => http.get('/reports/trend')
 export const fetchPsiSummary = () => http.get('/reports/psi-summary')
 export const fetchComplianceTrace = () => http.get('/reports/compliance-trace')
 export const fetchAbnormalDocs = () => http.get('/reports/abnormal-docs')
+export const auditAbnormalDoc = (id, data) => http.post(`/reports/abnormal-docs/${id}/audit`, data)
 export const fetchLinkage = () => http.get('/reports/linkage')
 
 export const fetchExportData = async () => {

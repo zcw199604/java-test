@@ -16,6 +16,9 @@ export const formatDateTime = (value?: string | null): string => {
 
 export const statusTypeMap: Record<string, string> = {
   CREATED: 'info',
+  APPROVED: 'primary',
+  REJECTED: 'danger',
+  CANCELLED: 'info',
   RECEIVED: 'warning',
   INBOUND: 'success',
   PAID: 'success',
@@ -31,7 +34,10 @@ export const statusTypeMap: Record<string, string> = {
 }
 
 export const statusLabelMap: Record<string, string> = {
-  CREATED: '已创建',
+  CREATED: '待审核',
+  APPROVED: '已通过',
+  REJECTED: '已驳回',
+  CANCELLED: '已取消',
   RECEIVED: '已到货',
   INBOUND: '已入库',
   PAID: '已回款',

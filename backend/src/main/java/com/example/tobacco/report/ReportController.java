@@ -6,10 +6,9 @@ import com.example.tobacco.model.TrendPoint;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
 
@@ -42,6 +41,11 @@ public class ReportController {
 
     @GetMapping("/abnormal-docs")
     public ApiResponse<List<Map<String, Object>>> abnormalDocs() { return ApiResponse.success(reportService.abnormalDocs()); }
+
+    @PostMapping("/abnormal-docs/{id}/audit")
+    public ApiResponse<Map<String, Object>> auditAbnormalDoc(@PathVariable Long id, @RequestBody Map<String, String> body, HttpServletRequest httpRequest) {
+        return ApiResponse.success(reportService.auditAbnormalDoc(id, body.get("decision"), body.get("remark"), String.valueOf(httpRequest.getAttribute("username"))));
+    }
 
     @GetMapping("/linkage")
     public ApiResponse<Map<String, Object>> linkage() { return ApiResponse.success(reportService.linkage()); }

@@ -17,6 +17,10 @@ public class SalesOrderItem {
     private String createdBy;
     private String createdAt;
     private String outboundAt;
+    private String auditedBy;
+    private String auditedAt;
+    private String auditRemark;
+    private String cancelReason;
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getOrderNo() { return orderNo; }
@@ -45,4 +49,12 @@ public class SalesOrderItem {
     public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
     public String getOutboundAt() { return outboundAt; }
     public void setOutboundAt(String outboundAt) { this.outboundAt = outboundAt; }
+    public String getAuditedBy() { return auditedBy; }
+    public void setAuditedBy(String auditedBy) { this.auditedBy = auditedBy; }
+    public String getAuditedAt() { return auditedAt; }
+    public void setAuditedAt(String auditedAt) { this.auditedAt = auditedAt; }
+    public String getAuditRemark() { return auditRemark; }
+    public void setAuditRemark(String auditRemark) { this.auditRemark = auditRemark; }
+    public String getCancelReason() { return cancelReason; }
+    public void setCancelReason(String cancelReason) { this.cancelReason = cancelReason; }
 }

@@ -6,6 +6,22 @@
 
 ## [Unreleased]
 
+### 新增
+- 补全 schema.sql 中 13 张缺失表定义（验证码、会话、密码重置、权限、角色权限、系统配置、仓库、用户数据范围、登录日志、操作日志、追溯记录、异常单据、消息）
+- 新增 bulletins 表用于销售信息发布功能
+- 新增 purchase_orders/sales_orders 审核/取消字段（audited_by, audited_at, audit_remark, cancel_reason）
+- 补全 seed.sql 中 30 条权限定义和四角色权限映射初始数据
+- 新增采购/销售订单审核（APPROVED/REJECTED）和取消（CANCELLED）完整流程
+- 新增采购/销售/库存 Excel 批量导入接口（POST /api/purchases/import, /api/sales/import, /api/inventories/import）
+- 新增消息自动推送机制：库存预警自动通知库管人员、审核结果自动通知订单创建者
+- 新增销售信息发布模块（BulletinController/BulletinService + SaleBulletinView 前端页面）
+- 新增异常单据审核通过/驳回接口（POST /api/reports/abnormal-docs/{id}/audit）
+- 新增追溯记录自动写入：采购/销售各 4 个业务节点自动写入 trace_records
+
+### 修复
+- 修复库存调拨不实际转移库存数量的问题，调拨现在会扣减库存并记录正确的变更流水
+- 修复采购到货前置条件从 CREATED 改为 APPROVED，销售出库前置条件从 CREATED 改为 APPROVED
+
 ### 变更
 - 补充 README 与知识库中的标准启动命令，统一前端先构建、后端单入口托管页面与 API 的运行口径
 - 明确项目默认启动方式为后端统一托管前端静态页面：前端构建产物发布到 `backend/src/main/resources/static/`，验收与冒烟默认不单独启动 Vite dev server

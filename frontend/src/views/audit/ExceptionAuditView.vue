@@ -2,9 +2,10 @@
   <div class="page-stack">
     <PageSection title="异常审核" description="仅超级管理员可见，用于审核异常库存、异常出库和可疑单据。">
       <AppTable :columns="columns" :rows="rows">
+        <template #status="{ value }"><el-tag :type="value === 'APPROVED' ? 'success' : value === 'REJECTED' ? 'danger' : 'warning'">{{ value === 'APPROVED' ? '已通过' : value === 'REJECTED' ? '已驳回' : '待审核' }}</el-tag></template>
         <template #actions="{ row }">
-          <el-button v-permission="'audit:view'" link type="success" @click="openDialog(row, '通过')">通过</el-button>
-          <el-button v-permission="'audit:view'" link type="danger" @click="openDialog(row, '驳回')">驳回</el-button>
+          <el-button v-permission="'audit:process'" link type="success" @click="openDialog(row, 'APPROVED')" v-if="row.status === 'PENDING'">通过</el-button>
+          <el-button v-permission="'audit:process'" link type="danger" @click="openDialog(row, 'REJECTED')" v-if="row.status === 'PENDING'">驳回</el-button>
         </template>
       </AppTable>
     </PageSection>
@@ -27,26 +28,39 @@ import { onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import PageSection from '../../components/PageSection.vue'
 import AppTable from '../../components/AppTable.vue'
-import { fetchAbnormalDocs } from '../../api/report'
+import { fetchAbnormalDocs, auditAbnormalDoc } from '../../api/report'
 
 const rows = ref([])
 const columns = [{ key: 'orderNo', label: '异常单号' }, { key: 'abnormalType', label: '异常类型' }, { key: 'reportedBy', label: '提交人' }, { key: 'status', label: '状态' }]
 const dialogVisible = ref(false)
 const actionLabel = ref('')
 const remark = ref('')
+const currentRow = ref(null)
+const currentDecision = ref('')
 
-const openDialog = (row, action) => {
-  actionLabel.value = `${action} ${row.orderNo}`
+const openDialog = (row, decision) => {
+  currentRow.value = row
+  currentDecision.value = decision
+  actionLabel.value = `${decision === 'APPROVED' ? '通过' : '驳回'} ${row.orderNo}`
+  remark.value = ''
   dialogVisible.value = true
 }
 
-const handleSubmit = () => {
-  dialogVisible.value = false
-  ElMessage.success('异常审核结果已提交（当前后端仅提供查询能力）')
+const handleSubmit = async () => {
+  try {
+    await auditAbnormalDoc(currentRow.value.id, { decision: currentDecision.value, remark: remark.value })
+    ElMessage.success('审核结果已提交')
+    dialogVisible.value = false
+    loadData()
+  } catch (e) {
+    ElMessage.error('提交失败: ' + (e.message || '未知错误'))
+  }
 }
 
-onMounted(async () => {
+const loadData = async () => {
   const result = await fetchAbnormalDocs().catch(() => ({ data: [] }))
   rows.value = result.data || []
-})
+}
+
+onMounted(loadData)
 </script>

@@ -72,6 +72,19 @@ public class ReportService {
         return jdbcTemplate.queryForList("select id, biz_type as bizType, biz_id as bizId, order_no as orderNo, abnormal_type as abnormalType, status, reported_by as reportedBy, audited_by as auditedBy, detail, DATE_FORMAT(created_at,'%Y-%m-%d %H:%i:%s') as createdAt from abnormal_documents order by id desc");
     }
 
+    public Map<String, Object> auditAbnormalDoc(Long id, String decision, String remark, String operator) {
+        String newStatus;
+        if ("APPROVED".equalsIgnoreCase(decision)) {
+            newStatus = "APPROVED";
+        } else if ("REJECTED".equalsIgnoreCase(decision)) {
+            newStatus = "REJECTED";
+        } else {
+            throw new IllegalArgumentException("审核决定必须为 APPROVED 或 REJECTED");
+        }
+        jdbcTemplate.update("update abnormal_documents set status=?, audited_by=? where id=? and status='PENDING'", newStatus, operator, id);
+        return jdbcTemplate.queryForMap("select id, biz_type as bizType, biz_id as bizId, order_no as orderNo, abnormal_type as abnormalType, status, reported_by as reportedBy, audited_by as auditedBy, detail, DATE_FORMAT(created_at,'%Y-%m-%d %H:%i:%s') as createdAt from abnormal_documents where id=?", id);
+    }
+
     public Map<String, Object> linkage() {
         Map<String, Object> result = new LinkedHashMap<String, Object>();
         result.put("categoryPurchaseSales", jdbcTemplate.queryForList("select p.category, ifnull(sum(po.total_amount),0) as purchaseAmount, ifnull(sum(so.total_amount),0) as salesAmount from products p left join purchase_orders po on p.id=po.product_id left join sales_orders so on p.id=so.product_id group by p.category"));

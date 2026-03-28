@@ -5,9 +5,12 @@
 
 ## 模块概述
 - **职责:** 信息发布、销售单、审核、取消、出库、回款、应收、统计、Excel 批处理
-- **状态:** 🚧开发中
-- **最后更新:** 2026-03-24
+- **状态:** ✅已落地，待数据库联调验证
+- **最后更新:** 2026-03-28
 
 ## 规范
-- 销售状态应覆盖创建、审核、出库、部分回款、已回款、取消关键节点。
-- 出库与回款均应写入追溯与异常记录。
+- 销售单状态流转为 `CREATED -> APPROVED|REJECTED -> OUTBOUND -> PARTIAL_PAID|PAID`，其中 `CREATED/REJECTED` 可转为 `CANCELLED`。
+- `GET/POST /api/bulletins` 对应销售信息发布能力，公告数据写入 `bulletins` 表。
+- `POST /api/sales/{id}/audit` 会写入 `audited_by`、`audited_at`、`audit_remark`；`POST /api/sales/{id}/cancel` 会写入 `cancel_reason`。
+- `POST /api/sales/import` 走 Excel 批量导入，限制单文件 `<=5MB`、单次 `<=1000` 行。
+- 审核、出库、回款均会写入 `trace_records`；出库后会触发库存预警检查并向库管角色推送站内消息。

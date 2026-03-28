@@ -119,6 +119,12 @@ export const asyncChildren: RouteRecordRaw[] = [
     meta: { title: '销售绩效', description: '查看销售趋势、达成率和区域表现。', icon: 'TrendCharts', group: 'sale', permission: 'sale:view' }
   },
   {
+    path: '/sale/bulletin',
+    name: 'sale-bulletin',
+    component: () => import('../views/sale/SaleBulletinView.vue'),
+    meta: { title: '销售信息发布', description: '发布销售公告和促销信息。', icon: 'ChatLineSquare', group: 'sale', permission: 'bulletin:view' }
+  },
+  {
     path: '/inventory/list',
     name: 'inventory-list',
     component: () => import('../views/inventory/InventoryListView.vue'),

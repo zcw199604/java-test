@@ -12,8 +12,8 @@
 - `system_configs`：系统配置
 - `messages`：站内消息
 - `categories` / `products` / `suppliers` / `customers` / `warehouses`：基础主数据
-- `purchase_requisitions` / `purchase_orders` / `purchase_order_tracks`：采购需求、采购单、采购跟踪
-- `sales_publishings` / `sales_orders` / `payment_records` / `receivable_records`：销售发布、销售单、回款、应收
+- `purchase_requisitions` / `purchase_orders` / `purchase_order_tracks`：采购需求、采购单、采购跟踪，采购单包含 `audited_by`、`audited_at`、`audit_remark`、`cancel_reason`
+- `bulletins` / `sales_orders` / `payment_records` / `receivable_records`：销售公告、销售单、回款、应收，销售单包含 `audited_by`、`audited_at`、`audit_remark`、`cancel_reason`
 - `inventories` / `inventory_records` / `inventory_check_reports` / `warning_records`：库存台账、流水、盘点、预警
 - `trace_records` / `abnormal_documents`：全链路追溯与异常单据
 
@@ -24,7 +24,6 @@
 - `purchase_orders.requisition_id -> purchase_requisitions.id`
 - `purchase_orders.supplier_id -> suppliers.id`
 - `purchase_orders.product_id -> products.id`
-- `sales_orders.publish_id -> sales_publishings.id`
 - `sales_orders.customer_id -> customers.id`
 - `sales_orders.product_id -> products.id`
 - `inventories.product_id -> products.id`
@@ -37,6 +36,6 @@
 ## 业务链路
 1. 用户登录 → 写入 `user_sessions`、`login_logs`
 2. 采购提报 → 建采购单 → 审核 → 到货 → 入库 → 写 `purchase_order_tracks`、`inventory_records`、`trace_records`
-3. 销售信息发布 → 建销售单 → 审核 → 出库 → 回款 → 写 `payment_records`、`receivable_records`、`trace_records`
+3. 销售公告发布 → 建销售单 → 审核 → 出库 → 回款 → 写 `payment_records`、`receivable_records`、`trace_records`
 4. 库存调拨 / 盘点 → 写 `inventory_records`、`inventory_check_reports`、`warning_records`
 5. 异常审核 / 合规追溯 → 聚合 `trace_records` 与 `abnormal_documents`

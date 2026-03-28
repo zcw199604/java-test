@@ -17,6 +17,10 @@ public class PurchaseOrderItem {
     private String createdAt;
     private String receivedAt;
     private String inboundAt;
+    private String auditedBy;
+    private String auditedAt;
+    private String auditRemark;
+    private String cancelReason;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -46,4 +50,12 @@ public class PurchaseOrderItem {
     public void setReceivedAt(String receivedAt) { this.receivedAt = receivedAt; }
     public String getInboundAt() { return inboundAt; }
     public void setInboundAt(String inboundAt) { this.inboundAt = inboundAt; }
+    public String getAuditedBy() { return auditedBy; }
+    public void setAuditedBy(String auditedBy) { this.auditedBy = auditedBy; }
+    public String getAuditedAt() { return auditedAt; }
+    public void setAuditedAt(String auditedAt) { this.auditedAt = auditedAt; }
+    public String getAuditRemark() { return auditRemark; }
+    public void setAuditRemark(String auditRemark) { this.auditRemark = auditRemark; }
+    public String getCancelReason() { return cancelReason; }
+    public void setCancelReason(String cancelReason) { this.cancelReason = cancelReason; }
 }

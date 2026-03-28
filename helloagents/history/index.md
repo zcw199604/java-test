@@ -14,6 +14,7 @@
 | 202603240230 | frontend-page-refactor | 功能 | ✅已完成 | [helloagents/history/2026-03/202603240230_frontend-page-refactor](2026-03/202603240230_frontend-page-refactor/) |
 | 202603240318 | taskbook-backend-alignment | 重构 | ✅已完成 | [helloagents/history/2026-03/202603240318_taskbook-backend-alignment](2026-03/202603240318_taskbook-backend-alignment/) |
 | 202603240320 | frontend-second-optimization | 优化 | ✅已完成 | [helloagents/history/2026-03/202603240320_frontend-second-optimization](2026-03/202603240320_frontend-second-optimization/) |
+| 202603281000 | platform-integrity-fix | 修复 | ✅已完成 | [helloagents/history/2026-03/202603281000_platform-integrity-fix](2026-03/202603281000_platform-integrity-fix/) |
 
 ---
 
@@ -27,3 +28,4 @@
 - [202603240230_frontend-page-refactor](2026-03/202603240230_frontend-page-refactor/) - 完成前端页面重构、动态权限菜单与后台工作台升级
 - [202603240318_taskbook-backend-alignment](2026-03/202603240318_taskbook-backend-alignment/) - 按任务书方向补齐后端认证、权限、采销存、报表、日志与 Excel 能力
 - [202603240320_frontend-second-optimization](2026-03/202603240320_frontend-second-optimization/) - 完成前端第二轮优化：性能拆包、按钮权限、无权限页与 TypeScript 改造
+- [202603281000_platform-integrity-fix](2026-03/202603281000_platform-integrity-fix/) - 补齐平台完整性缺口：订单审核取消、Excel 导入、消息推送、库存调拨、公告发布与异常审核

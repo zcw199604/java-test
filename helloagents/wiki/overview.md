@@ -22,7 +22,13 @@
 | sales | 销售业务 | 🚧开发中 | [sales](modules/sales.md) |
 | admin | 系统管理、权限、日志与报表 | 🚧开发中 | [admin](modules/admin.md) |
 
-## 3. 快速链接
+
+## 3. 标准启动说明
+- 先在 `frontend/` 执行 `npm install && npm run build`，生成静态资源。
+- 再在 `backend/` 执行 `mvn spring-boot:run`，由 Spring Boot 统一提供页面与 `/api/*`。
+- 常规联调、验收、冒烟检查统一访问后端端口，不额外依赖 `frontend` dev server。
+
+## 4. 快速链接
 - [技术约定](../project.md)
 - [架构设计](arch.md)
 - [API 手册](api.md)

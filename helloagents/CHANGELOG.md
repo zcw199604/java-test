@@ -7,6 +7,8 @@
 ## [Unreleased]
 
 ### 变更
+- 补充 README 与知识库中的标准启动命令，统一前端先构建、后端单入口托管页面与 API 的运行口径
+- 明确项目默认启动方式为后端统一托管前端静态页面：前端构建产物发布到 `backend/src/main/resources/static/`，验收与冒烟默认不单独启动 Vite dev server
 - 合并主分支后完成前端接口适配：登录验证码、消息中心、系统配置、角色权限、日志、追溯、异常页与 Excel 导出说明改为对接当前后端真实接口
 - 执行 `npm install`、`npm run type-check` 与 `npm run build`，确认前端构建通过并重新生成 `backend/src/main/resources/static/` 产物
 - 按任务书方向将后端认证与权限扩展为 Apache Shiro + RBAC 基础实现，新增验证码、忘记密码、重置密码、会话表与权限表

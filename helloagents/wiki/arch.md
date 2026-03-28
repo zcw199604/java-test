@@ -28,6 +28,11 @@ flowchart TD
 - `report`：采销存汇总、联动分析、合规追溯、异常单据、报表导出
 - `frontend`：后台工作台、动态路由、按钮权限、图表与导出交互
 
+## 部署与启动约定
+- 默认运行形态为单后端入口：Spring Boot 同时提供 `/api/*` 接口与构建后的前端静态资源。
+- 前端源码位于 `frontend/`，发布前需执行构建并将产物写入 `backend/src/main/resources/static/`。
+- 非前端专项调试场景，不单独启动 Vite 开发服务器，避免出现 5173 与后端版本不一致的问题。
+
 ## 核心流程
 ```mermaid
 sequenceDiagram

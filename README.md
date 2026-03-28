@@ -69,7 +69,17 @@
 
 ## 启动方式
 
-### 1. 启动后端
+### 默认方式：仅启动后端（推荐）
+
+前端页面默认通过后端静态资源方式提供，不需要额外启动前端项目。发布或联调前先构建前端：
+
+```bash
+cd frontend
+npm install
+npm run build
+```
+
+构建产物会写入 `backend/src/main/resources/static/`，随后启动后端：
 
 ```bash
 cd backend
@@ -78,7 +88,29 @@ mvn spring-boot:run
 
 默认地址：`http://localhost:8080`
 
-### 2. 启动前端
+### 标准启动命令
+
+```bash
+# 1) 构建前端静态资源
+cd frontend
+npm install
+npm run build
+
+# 2) 启动后端（统一提供 API + 页面）
+cd ../backend
+mvn spring-boot:run
+```
+
+如需使用本机指定 JDK 启动：
+
+```bash
+export JAVA_HOME=/mnt/dbz/jdk-21.0.4
+export PATH="$JAVA_HOME/bin:$PATH"
+cd backend
+mvn spring-boot:run
+```
+
+### 可选方式：仅前端专项调试时启动 dev server
 
 ```bash
 cd frontend
@@ -87,6 +119,8 @@ npm run dev
 ```
 
 默认地址：`http://localhost:5173`
+
+> 说明：常规验收、接口冒烟和集成联调以“后端统一提供页面 + API”为准，不建议长期依赖独立前端 dev server。
 
 ## 默认演示账号
 

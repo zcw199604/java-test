@@ -8,6 +8,8 @@ public class UserProfile {
     private String roleName;
     private String status;
     private String createdAt;
+    private String scopeType;
+    private String scopeValue;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -23,4 +25,8 @@ public class UserProfile {
     public void setStatus(String status) { this.status = status; }
     public String getCreatedAt() { return createdAt; }
     public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
+    public String getScopeType() { return scopeType; }
+    public void setScopeType(String scopeType) { this.scopeType = scopeType; }
+    public String getScopeValue() { return scopeValue; }
+    public void setScopeValue(String scopeValue) { this.scopeValue = scopeValue; }
 }

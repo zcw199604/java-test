@@ -1,6 +1,7 @@
 import http from './http'
 
 export const fetchUsers = () => http.get('/users')
+export const fetchUserDetail = (id) => http.get(`/users/${id}`)
 export const createUser = (payload) => http.post('/users', payload)
 export const updateUser = (id, payload) => http.put(`/users/${id}`, payload)
 export const updateUserStatus = (id, payload) => http.put(`/users/${id}/status`, payload)

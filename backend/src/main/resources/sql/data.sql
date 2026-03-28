@@ -7,6 +7,9 @@ DELETE FROM customers;
 DELETE FROM suppliers;
 DELETE FROM categories;
 DELETE FROM products;
+DELETE FROM user_data_scopes;
+DELETE FROM role_permissions;
+DELETE FROM permissions;
 DELETE FROM users;
 DELETE FROM roles;
 
@@ -61,3 +64,69 @@ INSERT INTO sales_orders (id, order_no, customer_id, product_id, quantity, unit_
 
 INSERT INTO payment_records (id, sales_order_id, amount, payer_name, remark) VALUES
 (1, 1, 2500.00, '陈老板', '初始化全额回款');
+
+INSERT INTO permissions (id, code, name, module, remark) VALUES
+(1, 'dashboard:view', '驾驶舱查看', 'dashboard', '查看首页驾驶舱'),
+(2, 'system:user:view', '用户查看', 'system', '查看账号信息'),
+(3, 'system:user:edit', '用户编辑', 'system', '维护账号信息'),
+(4, 'system:role:edit', '角色权限编辑', 'system', '维护角色权限'),
+(5, 'system:config:edit', '系统配置编辑', 'system', '维护系统配置'),
+(6, 'purchase:view', '采购查看', 'purchase', '查看采购单'),
+(7, 'purchase:create', '采购创建', 'purchase', '创建采购单'),
+(8, 'purchase:cancel', '采购取消', 'purchase', '取消采购单'),
+(9, 'purchase:import', '采购导入', 'purchase', '导入采购数据'),
+(10, 'purchase:inbound', '采购入库', 'purchase', '执行到货与入库'),
+(11, 'sales:view', '销售查看', 'sales', '查看销售单'),
+(12, 'sales:create', '销售创建', 'sales', '创建销售单'),
+(13, 'sales:cancel', '销售取消', 'sales', '取消销售单'),
+(14, 'sales:import', '销售导入', 'sales', '导入销售数据'),
+(15, 'sales:outbound', '销售出库', 'sales', '执行销售出库'),
+(16, 'sales:payment', '销售回款', 'sales', '登记销售回款'),
+(17, 'inventory:view', '库存查看', 'inventory', '查看库存台账'),
+(18, 'inventory:transfer', '库存调拨', 'inventory', '执行库存调拨'),
+(19, 'inventory:check', '库存盘点', 'inventory', '执行库存盘点'),
+(20, 'inventory:import', '库存导入', 'inventory', '导入库存数据'),
+(21, 'report:view', '报表查看', 'report', '查看报表'),
+(22, 'trace:view', '追溯查看', 'trace', '查看追溯链路'),
+(23, 'logs:view', '日志查看', 'log', '查看系统日志'),
+(24, 'message:view', '消息查看', 'message', '查看站内消息'),
+(25, 'audit:view', '异常审核', 'audit', '审核异常单据'),
+(26, 'bulletin:view', '销售公告查看', 'bulletin', '查看销售公告'),
+(27, 'bulletin:create', '销售公告发布', 'bulletin', '创建销售公告');
+
+INSERT INTO role_permissions (role_code, permission_code)
+SELECT 'ADMIN', code FROM permissions;
+
+INSERT INTO role_permissions (role_code, permission_code) VALUES
+('PURCHASER', 'dashboard:view'),
+('PURCHASER', 'purchase:view'),
+('PURCHASER', 'purchase:create'),
+('PURCHASER', 'purchase:cancel'),
+('PURCHASER', 'purchase:import'),
+('PURCHASER', 'purchase:inbound'),
+('PURCHASER', 'inventory:view'),
+('PURCHASER', 'report:view'),
+('PURCHASER', 'trace:view');
+
+INSERT INTO role_permissions (role_code, permission_code) VALUES
+('SELLER', 'dashboard:view'),
+('SELLER', 'sales:view'),
+('SELLER', 'sales:create'),
+('SELLER', 'sales:cancel'),
+('SELLER', 'sales:import'),
+('SELLER', 'sales:outbound'),
+('SELLER', 'sales:payment'),
+('SELLER', 'bulletin:view'),
+('SELLER', 'bulletin:create'),
+('SELLER', 'report:view'),
+('SELLER', 'trace:view');
+
+INSERT INTO role_permissions (role_code, permission_code) VALUES
+('KEEPER', 'dashboard:view'),
+('KEEPER', 'inventory:view'),
+('KEEPER', 'inventory:transfer'),
+('KEEPER', 'inventory:check'),
+('KEEPER', 'inventory:import'),
+('KEEPER', 'report:view'),
+('KEEPER', 'trace:view');
+

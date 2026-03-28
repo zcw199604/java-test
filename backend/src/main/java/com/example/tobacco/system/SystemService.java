@@ -53,11 +53,12 @@ public class SystemService {
     }
 
     @Transactional
-    public void createUser(Map<String, String> request, Long operatorId, String operatorName) {
+    public void createUser(Map<String, String> request, Long operatorId, String operatorName, String operatorRoleCode) {
         String username = required(request.get("username"), "账号不能为空");
         String password = required(request.get("password"), "初始密码不能为空");
         String realName = required(request.get("realName"), "姓名不能为空");
         String roleCode = required(request.get("roleCode"), "角色不能为空");
+        ensureAssignableRole(operatorRoleCode, roleCode);
         jdbcTemplate.update("insert into users(username,password,real_name,role_code,status) values(?,?,?,?,?)",
                 username,
                 passwordCodec.encode(username, password),
@@ -70,11 +71,14 @@ public class SystemService {
     }
 
     @Transactional
-    public void updateUser(Long id, Map<String, String> request, Long operatorId, String operatorName) {
+    public void updateUser(Long id, Map<String, String> request, Long operatorId, String operatorName, String operatorRoleCode) {
         Map<String, Object> existing = jdbcTemplate.queryForMap("select username, real_name as realName, role_code as roleCode, status from users where id=?", id);
+        ensureManageUserPermission(operatorRoleCode, String.valueOf(existing.get("roleCode")), "修改管理员账号");
+        String targetRoleCode = valueOrDefault(request.get("roleCode"), String.valueOf(existing.get("roleCode")));
+        ensureAssignableRole(operatorRoleCode, targetRoleCode);
         jdbcTemplate.update("update users set real_name=?, role_code=?, status=? where id=?",
                 valueOrDefault(request.get("realName"), String.valueOf(existing.get("realName"))),
-                valueOrDefault(request.get("roleCode"), String.valueOf(existing.get("roleCode"))),
+                targetRoleCode,
                 valueOrDefault(request.get("status"), String.valueOf(existing.get("status"))),
                 id);
         if (hasText(request.get("password"))) {
@@ -85,15 +89,18 @@ public class SystemService {
         auditService.logOperation(operatorId, operatorName, "SYSTEM", "UPDATE_USER", "USER", id, "更新用户");
     }
 
-    public void updateUserStatus(Long id, String status, Long operatorId, String operatorName) {
+    public void updateUserStatus(Long id, String status, Long operatorId, String operatorName, String operatorRoleCode) {
+        String targetRoleCode = jdbcTemplate.queryForObject("select role_code from users where id=?", String.class, id);
+        ensureManageUserPermission(operatorRoleCode, targetRoleCode, "变更管理员账号状态");
         String targetStatus = hasText(status) ? status.trim() : "ENABLED";
         jdbcTemplate.update("update users set status=? where id=?", targetStatus, id);
         auditService.logOperation(operatorId, operatorName, "SYSTEM", "UPDATE_USER_STATUS", "USER", id, "更新用户状态为" + targetStatus);
     }
 
     @Transactional
-    public void deleteUser(Long id, Long operatorId, String operatorName) {
-        Map<String, Object> user = jdbcTemplate.queryForMap("select username from users where id=?", id);
+    public void deleteUser(Long id, Long operatorId, String operatorName, String operatorRoleCode) {
+        Map<String, Object> user = jdbcTemplate.queryForMap("select username, role_code as roleCode from users where id=?", id);
+        ensureManageUserPermission(operatorRoleCode, String.valueOf(user.get("roleCode")), "删除管理员账号");
         String username = String.valueOf(user.get("username"));
         jdbcTemplate.update("delete from user_data_scopes where user_id=?", id);
         jdbcTemplate.update("delete from user_sessions where user_id=?", id);
@@ -201,6 +208,22 @@ public class SystemService {
         jdbcTemplate.update("insert into warehouses(name,address,status) values(?,?,?)",
                 request.get("name"), request.get("address"), request.getOrDefault("status", "ENABLED"));
         auditService.logOperation(operatorId, operatorName, "SYSTEM", "CREATE_WAREHOUSE", "WAREHOUSE", null, request.get("name"));
+    }
+
+    private void ensureManageUserPermission(String operatorRoleCode, String existingRoleCode, String actionName) {
+        if (isAdminRole(existingRoleCode) && !"SUPER_ADMIN".equalsIgnoreCase(operatorRoleCode)) {
+            throw new IllegalArgumentException("仅超级管理员可" + actionName);
+        }
+    }
+
+    private void ensureAssignableRole(String operatorRoleCode, String targetRoleCode) {
+        if (isAdminRole(targetRoleCode) && !"SUPER_ADMIN".equalsIgnoreCase(operatorRoleCode)) {
+            throw new IllegalArgumentException("仅超级管理员可将用户设置为超级管理员或普通管理员");
+        }
+    }
+
+    private boolean isAdminRole(String roleCode) {
+        return "SUPER_ADMIN".equalsIgnoreCase(roleCode) || "ADMIN".equalsIgnoreCase(roleCode);
     }
 
     private void replaceDataScopes(Long userId, String scopeType, String scopeValue) {

@@ -18,6 +18,9 @@
 | 202603280644 | catalog-supplier-maintenance | 修复 | ✅已完成 | [helloagents/history/2026-03/202603280644_catalog-supplier-maintenance](2026-03/202603280644_catalog-supplier-maintenance/) |
 | 202603280803 | account-role-management-fix | 修复 | ✅已完成 | [helloagents/history/2026-03/202603280803_account-role-management-fix](2026-03/202603280803_account-role-management-fix/) |
 | 202603280851 | audit-log-and-user-delete | 修复 | ✅已完成 | [helloagents/history/2026-03/202603280851_audit-log-and-user-delete](2026-03/202603280851_audit-log-and-user-delete/) |
+| 202603281130 | approval-and-inventory-check-fix | 修复 | ✅已完成 | [helloagents/history/2026-03/202603281130_approval-and-inventory-check-fix](2026-03/202603281130_approval-and-inventory-check-fix/) |
+| 202603281045 | role-hierarchy-fix | 修复 | ✅已完成 | [helloagents/history/2026-03/202603281045_role-hierarchy-fix](2026-03/202603281045_role-hierarchy-fix/) |
+| 202603281120 | admin-account-protection | 修复 | ✅已完成 | [helloagents/history/2026-03/202603281120_admin-account-protection](2026-03/202603281120_admin-account-protection/) |
 
 ---
 
@@ -35,3 +38,6 @@
 - [202603280644_catalog-supplier-maintenance](2026-03/202603280644_catalog-supplier-maintenance/) - 补齐商品/供应商维护、列表过滤与管理页路由回退
 - [202603280803_account-role-management-fix](2026-03/202603280803_account-role-management-fix/) - 修复账号管理与角色权限能力，支持角色切换与权限回显保存
 - [202603280851_audit-log-and-user-delete](2026-03/202603280851_audit-log-and-user-delete/) - 补齐业务操作日志并新增删除用户能力
+- [202603281130_approval-and-inventory-check-fix](2026-03/202603281130_approval-and-inventory-check-fix/) - 补齐采购/销售审批确认角色限制、库管页面权限与库存盘点实际提交
+- [202603281045_role-hierarchy-fix](2026-03/202603281045_role-hierarchy-fix/) - 调整角色体系为五种并将默认 admin 切换为超级管理员
+- [202603281120_admin-account-protection](2026-03/202603281120_admin-account-protection/) - 限制普通管理员修改、停用和删除管理员类账号

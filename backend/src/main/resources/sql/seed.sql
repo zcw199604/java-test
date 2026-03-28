@@ -1,17 +1,19 @@
 USE tobacco_platform;
 
 INSERT INTO roles (id, code, name, remark) VALUES
-(1, 'ADMIN', '平台管理员', '系统超级管理员'),
-(2, 'PURCHASER', '采购专员', '负责采购流程'),
-(3, 'SELLER', '销售专员', '负责销售流程'),
-(4, 'KEEPER', '库管人员', '负责库存管理')
+(1, 'SUPER_ADMIN', '超级管理员', '拥有系统全量管理能力与最高权限'),
+(2, 'ADMIN', '普通管理员', '负责账号权限、基础资料和报表管理'),
+(3, 'PURCHASER', '采购专员', '负责采购流程'),
+(4, 'SELLER', '销售专员', '负责销售流程'),
+(5, 'KEEPER', '库管人员', '负责库存管理')
 ON DUPLICATE KEY UPDATE name = VALUES(name), remark = VALUES(remark);
 
 INSERT INTO users (id, username, password, real_name, role_code, status) VALUES
-(1, 'admin', '123456', '系统管理员', 'ADMIN', 'ENABLED'),
-(2, 'buyer', '123456', '采购示例用户', 'PURCHASER', 'ENABLED'),
-(3, 'seller', '123456', '销售示例用户', 'SELLER', 'ENABLED'),
-(4, 'keeper', '123456', '库管示例用户', 'KEEPER', 'ENABLED')
+(1, 'admin', '123456', '超级管理员', 'SUPER_ADMIN', 'ENABLED'),
+(2, 'manager', '123456', '普通管理员', 'ADMIN', 'ENABLED'),
+(3, 'buyer', '123456', '采购示例用户', 'PURCHASER', 'ENABLED'),
+(4, 'seller', '123456', '销售示例用户', 'SELLER', 'ENABLED'),
+(5, 'keeper', '123456', '库管示例用户', 'KEEPER', 'ENABLED')
 ON DUPLICATE KEY UPDATE real_name = VALUES(real_name), role_code = VALUES(role_code), status = VALUES(status);
 
 INSERT INTO products (id, code, name, category, unit, unit_price, warning_threshold, status) VALUES
@@ -64,6 +66,11 @@ ON DUPLICATE KEY UPDATE name = VALUES(name), module = VALUES(module), remark = V
 -- ============================================================
 -- 角色权限映射初始数据
 -- ============================================================
+
+-- SUPER_ADMIN: 全部权限
+INSERT INTO role_permissions (role_code, permission_code)
+SELECT 'SUPER_ADMIN', code FROM permissions
+ON DUPLICATE KEY UPDATE role_code = VALUES(role_code);
 
 -- ADMIN: 全部权限
 INSERT INTO role_permissions (role_code, permission_code)

@@ -1,6 +1,6 @@
 <template>
   <div class="page-stack">
-    <PageSection title="采购入库" description="根据采购单号自动带出数据，补充批次与实收数量后同步库存。">
+    <PageSection title="采购入库" description="由管理员、超级管理员或库管确认采购到货后的最终入库，库存将同步更新。">
       <div class="toolbar-grid two">
         <el-select v-model="selectedId" placeholder="选择待入库订单">
           <el-option v-for="item in receivableRows" :key="item.id" :label="`${item.orderNo} / ${item.productName}`" :value="item.id" />
@@ -11,7 +11,7 @@
         <template #status="{ value }"><el-tag :type="statusTypeMap[value] || 'warning'">{{ statusLabelMap[value] || value }}</el-tag></template>
       </AppTable>
       <div class="dialog-footer">
-        <el-button v-permission="'purchase:edit'" type="primary" :disabled="!selectedId" @click="handleInbound">确认入库</el-button>
+        <el-button v-permission="['purchase:edit', 'inventory:edit']" type="primary" :disabled="!selectedId" @click="handleInbound">确认入库</el-button>
       </div>
     </PageSection>
   </div>
@@ -34,7 +34,7 @@ const receivableRows = computed(() => rows.value.filter((item) => item.status ==
 const loadData = async () => {
   const result = await fetchPurchases().catch(() => ({ data: [] }))
   rows.value = result.data || []
-  if (receivableRows.value[0]) selectedId.value = receivableRows.value[0].id
+  selectedId.value = receivableRows.value[0]?.id || null
 }
 
 const handleInbound = async () => {

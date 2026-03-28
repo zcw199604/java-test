@@ -4,10 +4,10 @@
       <template #actions>
         <el-space>
           <el-upload :show-file-list="false" accept=".xlsx,.xls" :http-request="handleImport">
-            <el-button v-permission="'purchase:import'">导入 Excel</el-button>
+            <el-button v-permission="'purchase:edit'">导入 Excel</el-button>
           </el-upload>
           <el-button v-permission="'purchase:view'" @click="handleExport">导出 Excel</el-button>
-          <el-button v-permission="'purchase:create'" type="primary" @click="router.push('/purchase/order/create')">新建订单</el-button>
+          <el-button v-permission="'purchase:edit'" type="primary" @click="router.push('/purchase/order/create')">新建订单</el-button>
         </el-space>
       </template>
       <div class="toolbar-grid two">
@@ -24,10 +24,10 @@
       <AppTable :columns="columns" :rows="filteredRows">
         <template #status="{ value }"><el-tag :type="statusTypeMap[value] || 'info'">{{ statusLabelMap[value] || value }}</el-tag></template>
         <template #actions="{ row }">
-          <el-button v-permission="'purchase:audit'" link type="primary" @click="openAuditDialog(row)" v-if="row.status === 'CREATED'">审核</el-button>
-          <el-button v-permission="'purchase:cancel'" link type="danger" @click="handleCancel(row)" v-if="row.status === 'CREATED' || row.status === 'REJECTED'">取消</el-button>
-          <el-button v-permission="'purchase:inbound'" link type="warning" @click="handleReceive(row)" v-if="row.status === 'APPROVED'">到货</el-button>
-          <el-button v-permission="'purchase:inbound'" link type="success" @click="handleInbound(row)" v-if="row.status === 'RECEIVED'">入库</el-button>
+          <el-button v-permission="['purchase:edit', 'inventory:edit']" link type="primary" @click="openAuditDialog(row)" v-if="row.status === 'CREATED'">审核</el-button>
+          <el-button v-permission="'purchase:edit'" link type="danger" @click="handleCancel(row)" v-if="row.status === 'CREATED' || row.status === 'REJECTED'">取消</el-button>
+          <el-button v-permission="['purchase:edit', 'inventory:edit']" link type="warning" @click="handleReceive(row)" v-if="row.status === 'APPROVED'">到货</el-button>
+          <el-button v-permission="['purchase:edit', 'inventory:edit']" link type="success" @click="handleInbound(row)" v-if="row.status === 'RECEIVED'">入库</el-button>
         </template>
       </AppTable>
     </PageSection>

@@ -69,7 +69,8 @@ public class PurchaseService {
     }
 
     @Transactional
-    public PurchaseOrderItem audit(Long id, String decision, String remark, String operator) {
+    public PurchaseOrderItem audit(Long id, String decision, String remark, String operator, String roleCode) {
+        requireApprovalRole(roleCode, "采购审核");
         PurchaseOrderItem item = detail(id);
         if (!"CREATED".equals(item.getStatus())) {
             throw new IllegalArgumentException("仅待审核状态的采购单可审核");
@@ -110,7 +111,8 @@ public class PurchaseService {
     }
 
     @Transactional
-    public PurchaseOrderItem receive(Long id, String operatorName) {
+    public PurchaseOrderItem receive(Long id, String operatorName, String roleCode) {
+        requireApprovalRole(roleCode, "采购到货确认");
         PurchaseOrderItem item = detail(id);
         if ("INBOUND".equals(item.getStatus()) || "RECEIVED".equals(item.getStatus())) {
             return item;
@@ -125,7 +127,8 @@ public class PurchaseService {
     }
 
     @Transactional
-    public PurchaseOrderItem inbound(Long id, String operatorName) {
+    public PurchaseOrderItem inbound(Long id, String operatorName, String roleCode) {
+        requireApprovalRole(roleCode, "采购入库确认");
         PurchaseOrderItem item = detail(id);
         if ("INBOUND".equals(item.getStatus())) {
             return item;
@@ -220,6 +223,18 @@ public class PurchaseService {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    private void requireApprovalRole(String roleCode, String actionName) {
+        if (!isApprovalRole(roleCode)) {
+            throw new IllegalArgumentException(actionName + "仅允许超级管理员、普通管理员或库管执行");
+        }
+    }
+
+    private boolean isApprovalRole(String roleCode) {
+        return "SUPER_ADMIN".equalsIgnoreCase(roleCode)
+                || "ADMIN".equalsIgnoreCase(roleCode)
+                || "KEEPER".equalsIgnoreCase(roleCode);
     }
 
     private PurchaseOrderItem detail(Long id) {

@@ -70,7 +70,8 @@ public class SalesService {
     }
 
     @Transactional
-    public SalesOrderItem audit(Long id, String decision, String remark, String operator) {
+    public SalesOrderItem audit(Long id, String decision, String remark, String operator, String roleCode) {
+        requireApprovalRole(roleCode, "销售审核");
         SalesOrderItem item = detail(id);
         if (!"CREATED".equals(item.getStatus())) {
             throw new IllegalArgumentException("仅待审核状态的销售单可审核");
@@ -112,8 +113,8 @@ public class SalesService {
 
     @Transactional
     public SalesOrderItem outbound(Long id, String username, String roleCode) {
+        requireApprovalRole(roleCode, "销售出库确认");
         SalesOrderItem item = detail(id);
-        validateOwnership(item, username, roleCode);
         if (!"APPROVED".equals(item.getStatus())) {
             if ("OUTBOUND".equals(item.getStatus()) || "PARTIAL_PAID".equals(item.getStatus()) || "PAID".equals(item.getStatus())) {
                 return item;
@@ -224,6 +225,18 @@ public class SalesService {
 
     private boolean isSeller(String roleCode) {
         return "SELLER".equalsIgnoreCase(roleCode);
+    }
+
+    private void requireApprovalRole(String roleCode, String actionName) {
+        if (!isApprovalRole(roleCode)) {
+            throw new IllegalArgumentException(actionName + "仅允许超级管理员、普通管理员或库管执行");
+        }
+    }
+
+    private boolean isApprovalRole(String roleCode) {
+        return "SUPER_ADMIN".equalsIgnoreCase(roleCode)
+                || "ADMIN".equalsIgnoreCase(roleCode)
+                || "KEEPER".equalsIgnoreCase(roleCode);
     }
 
     private void validateOwnership(SalesOrderItem item, String username, String roleCode) {

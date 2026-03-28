@@ -4,19 +4,19 @@
       <template #actions>
         <el-space>
           <el-upload :show-file-list="false" accept=".xlsx,.xls" :http-request="handleImport">
-            <el-button v-permission="'sales:import'">导入 Excel</el-button>
+            <el-button v-permission="'sale:edit'">导入 Excel</el-button>
           </el-upload>
-          <el-button v-permission="'sales:view'" @click="handleExport">导出 Excel</el-button>
-          <el-button v-permission="'sales:create'" type="primary" @click="router.push('/sale/order/create')">新建销售单</el-button>
+          <el-button v-permission="'sale:view'" @click="handleExport">导出 Excel</el-button>
+          <el-button v-permission="'sale:edit'" type="primary" @click="router.push('/sale/order/create')">新建销售单</el-button>
         </el-space>
       </template>
       <AppTable :columns="columns" :rows="rows">
         <template #status="{ value }"><el-tag :type="statusTypeMap[value] || 'info'">{{ statusLabelMap[value] || value }}</el-tag></template>
         <template #actions="{ row }">
-          <el-button v-permission="'sales:audit'" link type="primary" @click="openAuditDialog(row)" v-if="row.status === 'CREATED'">审核</el-button>
-          <el-button v-permission="'sales:cancel'" link type="danger" @click="handleCancel(row)" v-if="row.status === 'CREATED' || row.status === 'REJECTED'">取消</el-button>
-          <el-button v-permission="'sales:outbound'" link type="warning" @click="handleOutbound(row)" v-if="row.status === 'APPROVED'">出库</el-button>
-          <el-button v-permission="'sales:payment'" link type="success" @click="handlePayment(row)" v-if="row.status !== 'PAID' && row.status !== 'CREATED' && row.status !== 'APPROVED' && row.status !== 'REJECTED' && row.status !== 'CANCELLED'">回款</el-button>
+          <el-button v-permission="['sale:edit', 'inventory:edit']" link type="primary" @click="openAuditDialog(row)" v-if="row.status === 'CREATED'">审核</el-button>
+          <el-button v-permission="'sale:edit'" link type="danger" @click="handleCancel(row)" v-if="row.status === 'CREATED' || row.status === 'REJECTED'">取消</el-button>
+          <el-button v-permission="['sale:edit', 'inventory:edit']" link type="warning" @click="handleOutbound(row)" v-if="row.status === 'APPROVED'">出库</el-button>
+          <el-button v-permission="'sale:edit'" link type="success" @click="handlePayment(row)" v-if="row.status !== 'PAID' && row.status !== 'CREATED' && row.status !== 'APPROVED' && row.status !== 'REJECTED' && row.status !== 'CANCELLED'">回款</el-button>
         </template>
       </AppTable>
     </PageSection>

@@ -74,7 +74,7 @@ export const asyncChildren: RouteRecordRaw[] = [
     path: '/purchase/order',
     name: 'purchase-order',
     component: () => import('../views/purchase/PurchaseOrderListView.vue'),
-    meta: { title: '采购订单', description: '查看采购订单、到货和入库进度。', icon: 'ShoppingTrolley', group: 'purchase', permission: 'purchase:view' }
+    meta: { title: '采购订单', description: '查看采购订单、到货和入库进度。', icon: 'ShoppingTrolley', group: 'purchase', permission: ['purchase:view', 'inventory:edit'] }
   },
   {
     path: '/purchase/order/create',
@@ -92,7 +92,7 @@ export const asyncChildren: RouteRecordRaw[] = [
     path: '/purchase/inbound',
     name: 'purchase-inbound',
     component: () => import('../views/purchase/PurchaseInboundView.vue'),
-    meta: { title: '采购入库', description: '按待入库订单完成批次登记。', icon: 'Download', group: 'purchase', permission: 'purchase:edit' }
+    meta: { title: '采购入库', description: '按待入库订单完成批次登记。', icon: 'Download', group: 'purchase', permission: ['purchase:edit', 'inventory:edit'] }
   },
   {
     path: '/purchase/analysis',
@@ -104,7 +104,7 @@ export const asyncChildren: RouteRecordRaw[] = [
     path: '/sale/order',
     name: 'sale-order',
     component: () => import('../views/sale/SaleOrderListView.vue'),
-    meta: { title: '销售订单', description: '管理销售订单、出库与回款。', icon: 'Sell', group: 'sale', permission: 'sale:view' }
+    meta: { title: '销售订单', description: '管理销售订单、出库与回款。', icon: 'Sell', group: 'sale', permission: ['sale:view', 'inventory:edit'] }
   },
   {
     path: '/sale/order/create',
@@ -122,7 +122,7 @@ export const asyncChildren: RouteRecordRaw[] = [
     path: '/sale/outbound',
     name: 'sale-outbound',
     component: () => import('../views/sale/SaleOutboundView.vue'),
-    meta: { title: '销售出库', description: '处理待出库销售单。', icon: 'Upload', group: 'sale', permission: 'sale:edit' }
+    meta: { title: '销售出库', description: '处理待出库销售单。', icon: 'Upload', group: 'sale', permission: ['sale:edit', 'inventory:edit'] }
   },
   {
     path: '/sale/performance',

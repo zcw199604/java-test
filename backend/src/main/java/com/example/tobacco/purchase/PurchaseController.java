@@ -34,7 +34,7 @@ public class PurchaseController {
 
     @PostMapping("/{id}/audit")
     public ApiResponse<PurchaseOrderItem> audit(@PathVariable Long id, @Validated @RequestBody AuditRequest request, HttpServletRequest httpRequest) {
-        return ApiResponse.success(purchaseService.audit(id, request.getDecision(), request.getRemark(), String.valueOf(httpRequest.getAttribute("username"))));
+        return ApiResponse.success(purchaseService.audit(id, request.getDecision(), request.getRemark(), String.valueOf(httpRequest.getAttribute("username")), String.valueOf(httpRequest.getAttribute("roleCode"))));
     }
 
     @PostMapping("/{id}/cancel")
@@ -44,12 +44,12 @@ public class PurchaseController {
 
     @PostMapping("/{id}/inbound")
     public ApiResponse<PurchaseOrderItem> inbound(@PathVariable Long id, HttpServletRequest httpRequest) {
-        return ApiResponse.success(purchaseService.inbound(id, String.valueOf(httpRequest.getAttribute("username"))));
+        return ApiResponse.success(purchaseService.inbound(id, String.valueOf(httpRequest.getAttribute("username")), String.valueOf(httpRequest.getAttribute("roleCode"))));
     }
 
     @PostMapping("/{id}/receive")
     public ApiResponse<PurchaseOrderItem> receive(@PathVariable Long id, HttpServletRequest httpRequest) {
-        return ApiResponse.success(purchaseService.receive(id, String.valueOf(httpRequest.getAttribute("username"))));
+        return ApiResponse.success(purchaseService.receive(id, String.valueOf(httpRequest.getAttribute("username")), String.valueOf(httpRequest.getAttribute("roleCode"))));
     }
 
     @PostMapping("/import")

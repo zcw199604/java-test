@@ -23,3 +23,10 @@
 
 - 采购/销售/库存关键业务动作现已同时写入 `operation_logs`，覆盖审批、到货、入库、出库、回款、调拨与盘点。
 - 用户删除接口 `DELETE /api/users/{id}` 已提供，并在删除前清理会话与数据范围。
+
+- 采购与销售服务层已增加审批角色校验，采购审核/到货/入库与销售审核/出库仅允许超级管理员、普通管理员或库管执行。
+- 库存盘点接口继续以 `/api/inventory-checks` 更新 `inventories.quantity`，并作为前端盘点提交的唯一真实入口。
+
+- 数据库初始化角色现为五种：SUPER_ADMIN、ADMIN、PURCHASER、SELLER、KEEPER；默认 `admin/123456` 为超级管理员，新增 `manager/123456` 作为普通管理员示例账号。
+- 用户创建与编辑接口现校验操作者角色：仅 `SUPER_ADMIN` 可分配 `SUPER_ADMIN` / `ADMIN`，避免普通管理员扩散管理员权限。
+- 管理员类账号保护已扩展到更新、状态变更与删除接口：非 `SUPER_ADMIN` 无法修改、停用或删除 `SUPER_ADMIN` / `ADMIN` 用户。

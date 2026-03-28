@@ -24,26 +24,26 @@ public class SystemController {
     public ApiResponse<Map<String, Object>> userDetail(@PathVariable Long id) { return ApiResponse.success(systemService.userDetail(id)); }
 
     @PostMapping("/users")
-    public ApiResponse<String> createUser(@RequestBody Map<String, String> request, @RequestAttribute("userId") Long userId, @RequestAttribute("username") String username) {
-        systemService.createUser(request, userId, username);
+    public ApiResponse<String> createUser(@RequestBody Map<String, String> request, @RequestAttribute("userId") Long userId, @RequestAttribute("username") String username, @RequestAttribute("roleCode") String roleCode) {
+        systemService.createUser(request, userId, username, roleCode);
         return ApiResponse.success("ok");
     }
 
     @PutMapping("/users/{id}")
-    public ApiResponse<String> updateUser(@PathVariable Long id, @RequestBody Map<String, String> request, @RequestAttribute("userId") Long userId, @RequestAttribute("username") String username) {
-        systemService.updateUser(id, request, userId, username);
+    public ApiResponse<String> updateUser(@PathVariable Long id, @RequestBody Map<String, String> request, @RequestAttribute("userId") Long userId, @RequestAttribute("username") String username, @RequestAttribute("roleCode") String roleCode) {
+        systemService.updateUser(id, request, userId, username, roleCode);
         return ApiResponse.success("ok");
     }
 
     @PutMapping("/users/{id}/status")
-    public ApiResponse<String> updateUserStatus(@PathVariable Long id, @RequestBody Map<String, String> body, @RequestAttribute("userId") Long userId, @RequestAttribute("username") String username) {
-        systemService.updateUserStatus(id, body.getOrDefault("status", "ENABLED"), userId, username);
+    public ApiResponse<String> updateUserStatus(@PathVariable Long id, @RequestBody Map<String, String> body, @RequestAttribute("userId") Long userId, @RequestAttribute("username") String username, @RequestAttribute("roleCode") String roleCode) {
+        systemService.updateUserStatus(id, body.getOrDefault("status", "ENABLED"), userId, username, roleCode);
         return ApiResponse.success("ok");
     }
 
     @DeleteMapping("/users/{id}")
-    public ApiResponse<String> deleteUser(@PathVariable Long id, @RequestAttribute("userId") Long userId, @RequestAttribute("username") String username) {
-        systemService.deleteUser(id, userId, username);
+    public ApiResponse<String> deleteUser(@PathVariable Long id, @RequestAttribute("userId") Long userId, @RequestAttribute("username") String username, @RequestAttribute("roleCode") String roleCode) {
+        systemService.deleteUser(id, userId, username, roleCode);
         return ApiResponse.success("ok");
     }
 

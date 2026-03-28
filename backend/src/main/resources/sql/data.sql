@@ -14,16 +14,18 @@ DELETE FROM users;
 DELETE FROM roles;
 
 INSERT INTO roles (id, code, name, remark) VALUES
-(1, 'ADMIN', '平台管理员', '负责账号权限、基础资料和报表管理'),
-(2, 'PURCHASER', '采购专员', '负责采购订单与到货入库'),
-(3, 'SELLER', '销售专员', '负责销售订单、出库与回款'),
-(4, 'KEEPER', '库管人员', '负责库存台账、盘点与预警');
+(1, 'SUPER_ADMIN', '超级管理员', '拥有系统全量管理能力与最高权限'),
+(2, 'ADMIN', '普通管理员', '负责账号权限、基础资料和报表管理'),
+(3, 'PURCHASER', '采购专员', '负责采购订单与到货入库'),
+(4, 'SELLER', '销售专员', '负责销售订单、出库与回款'),
+(5, 'KEEPER', '库管人员', '负责库存台账、盘点与预警');
 
 INSERT INTO users (id, username, password, real_name, role_code, status) VALUES
-(1, 'admin', '123456', '系统管理员', 'ADMIN', 'ENABLED'),
-(2, 'buyer', '123456', '采购张三', 'PURCHASER', 'ENABLED'),
-(3, 'seller', '123456', '销售李四', 'SELLER', 'ENABLED'),
-(4, 'keeper', '123456', '库管王五', 'KEEPER', 'ENABLED');
+(1, 'admin', '123456', '超级管理员', 'SUPER_ADMIN', 'ENABLED'),
+(2, 'manager', '123456', '普通管理员', 'ADMIN', 'ENABLED'),
+(3, 'buyer', '123456', '采购张三', 'PURCHASER', 'ENABLED'),
+(4, 'seller', '123456', '销售李四', 'SELLER', 'ENABLED'),
+(5, 'keeper', '123456', '库管王五', 'KEEPER', 'ENABLED');
 
 INSERT INTO categories (id, name, remark, status) VALUES
 (1, '高端卷烟', '高端系列', 'ENABLED'),
@@ -93,6 +95,9 @@ INSERT INTO permissions (id, code, name, module, remark) VALUES
 (25, 'audit:view', '异常审核', 'audit', '审核异常单据'),
 (26, 'bulletin:view', '销售公告查看', 'bulletin', '查看销售公告'),
 (27, 'bulletin:create', '销售公告发布', 'bulletin', '创建销售公告');
+
+INSERT INTO role_permissions (role_code, permission_code)
+SELECT 'SUPER_ADMIN', code FROM permissions;
 
 INSERT INTO role_permissions (role_code, permission_code)
 SELECT 'ADMIN', code FROM permissions;

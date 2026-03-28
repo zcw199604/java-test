@@ -28,7 +28,7 @@ public class SalesController {
 
     @PostMapping("/{id}/audit")
     public ApiResponse<SalesOrderItem> audit(@PathVariable Long id, @Validated @RequestBody AuditRequest request, HttpServletRequest httpRequest) {
-        return ApiResponse.success(salesService.audit(id, request.getDecision(), request.getRemark(), String.valueOf(httpRequest.getAttribute("username"))));
+        return ApiResponse.success(salesService.audit(id, request.getDecision(), request.getRemark(), String.valueOf(httpRequest.getAttribute("username")), String.valueOf(httpRequest.getAttribute("roleCode"))));
     }
 
     @PostMapping("/{id}/cancel")

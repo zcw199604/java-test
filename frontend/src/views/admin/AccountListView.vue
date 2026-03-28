@@ -22,11 +22,12 @@
           <span>{{ row.scopeType ? `${row.scopeType}:${row.scopeValue || 'ALL'}` : '--' }}</span>
         </template>
         <template #actions="{ row }">
-          <el-button link type="primary" @click="openEditDialog(row)">编辑</el-button>
-          <el-button link :type="row.status === 'ENABLED' ? 'warning' : 'success'" @click="toggleStatus(row)">
+          <el-button v-if="canManageRow(row)" link type="primary" @click="openEditDialog(row)">编辑</el-button>
+          <el-button v-if="canManageRow(row)" link :type="row.status === 'ENABLED' ? 'warning' : 'success'" @click="toggleStatus(row)">
             {{ row.status === 'ENABLED' ? '停用' : '启用' }}
           </el-button>
-          <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
+          <el-button v-if="canManageRow(row)" link type="danger" @click="handleDelete(row)">删除</el-button>
+          <el-tag v-else type="info">仅超级管理员可管理</el-tag>
         </template>
       </AppTable>
     </PageSection>
@@ -44,7 +45,7 @@
         </el-form-item>
         <el-form-item label="角色" prop="roleCode">
           <el-select v-model="form.roleCode" style="width: 100%">
-            <el-option v-for="item in roles" :key="item.code" :label="item.name" :value="item.code" />
+            <el-option v-for="item in assignableRoles" :key="item.code" :label="item.name" :value="item.code" />
           </el-select>
         </el-form-item>
         <el-form-item label="状态" prop="status">
@@ -78,7 +79,9 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { createUser, deleteUser, fetchUserDetail, fetchUsers, fetchRoles, updateUser, updateUserStatus } from '../../api/system'
 import PageSection from '../../components/PageSection.vue'
 import AppTable from '../../components/AppTable.vue'
+import { useAppStore } from '../../stores/app'
 
+const appStore = useAppStore()
 const loading = ref(false)
 const submitting = ref(false)
 const keyword = ref('')
@@ -119,6 +122,13 @@ const columns = [
   { key: 'createdAt', label: '创建时间', minWidth: 180 }
 ]
 
+const assignableRoles = computed(() => {
+  if (appStore.roleCode === 'SUPER_ADMIN') return roles.value
+  return roles.value.filter((item) => item.code !== 'SUPER_ADMIN' && item.code !== 'ADMIN')
+})
+
+const canManageRow = (row) => appStore.roleCode === 'SUPER_ADMIN' || !['SUPER_ADMIN', 'ADMIN'].includes(row.roleCode)
+
 const filteredRows = computed(() => rows.value.filter((item) => {
   const matchKeyword = !keyword.value || JSON.stringify(item).includes(keyword.value)
   const matchStatus = !statusFilter.value || item.status === statusFilter.value
@@ -138,8 +148,8 @@ const loadData = async () => {
     ])
     rows.value = userResult.data || []
     roles.value = roleResult.data || []
-    if (!roles.value.find((item) => item.code === form.roleCode) && roles.value.length > 0) {
-      form.roleCode = roles.value[0].code
+    if (!assignableRoles.value.find((item) => item.code === form.roleCode) && assignableRoles.value.length > 0) {
+      form.roleCode = assignableRoles.value[0].code
     }
   } finally {
     loading.value = false

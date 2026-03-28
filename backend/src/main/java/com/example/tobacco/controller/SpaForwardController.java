@@ -34,6 +34,8 @@ public class SpaForwardController {
             "/admin/account",
             "/admin/role",
             "/admin/base-data",
+            "/catalog/products",
+            "/supplier/list",
             "/admin/log",
             "/admin/config",
             "/report/center",

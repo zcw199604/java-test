@@ -17,7 +17,10 @@ public class SupplierController {
     public SupplierController(SupplierService supplierService) { this.supplierService = supplierService; }
 
     @GetMapping
-    public ApiResponse<List<SupplierItem>> list() { return ApiResponse.success(supplierService.listSuppliers()); }
+    public ApiResponse<List<SupplierItem>> list(@RequestParam(required = false) String keyword,
+                                               @RequestParam(required = false) String status) {
+        return ApiResponse.success(supplierService.listSuppliers(keyword, status));
+    }
 
     @PostMapping
     public ApiResponse<String> create(@Validated @RequestBody SupplierRequest request) { supplierService.createSupplier(request); return ApiResponse.success("ok"); }

@@ -47,6 +47,18 @@ export const asyncChildren: RouteRecordRaw[] = [
     meta: { title: '基础资料', description: '统一浏览品类、供应商、客户和仓库信息。', icon: 'Tickets', group: 'admin', permission: 'admin:base:view' }
   },
   {
+    path: '/catalog/products',
+    name: 'catalog-products',
+    component: () => import('../views/catalog/ProductListView.vue'),
+    meta: { title: '商品管理', description: '维护商品编码、品类、价格与预警阈值。', icon: 'Goods', group: 'admin', permission: 'admin:base:view' }
+  },
+  {
+    path: '/supplier/list',
+    name: 'supplier-list',
+    component: () => import('../views/supplier/SupplierListView.vue'),
+    meta: { title: '供应商管理', description: '维护供应商基础资料、联系人与状态。', icon: 'Van', group: 'admin', permission: 'admin:base:view' }
+  },
+  {
     path: '/admin/log',
     name: 'admin-log',
     component: () => import('../views/admin/LogListView.vue'),

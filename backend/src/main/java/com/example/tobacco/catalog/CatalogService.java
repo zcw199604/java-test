@@ -8,6 +8,7 @@ import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -19,10 +20,27 @@ public class CatalogService {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    public List<ProductItem> listProducts() {
-        return jdbcTemplate.query(
-                "select id, code, name, category, unit, unit_price as unitPrice, warning_threshold as warningThreshold, status from products order by id",
-                new BeanPropertyRowMapper<ProductItem>(ProductItem.class));
+    public List<ProductItem> listProducts(String keyword, String status, String category) {
+        StringBuilder sql = new StringBuilder(
+                "select id, code, name, category, unit, unit_price as unitPrice, warning_threshold as warningThreshold, status from products where 1=1");
+        List<Object> params = new ArrayList<Object>();
+        if (hasText(keyword)) {
+            sql.append(" and (code like ? or name like ? or category like ?)");
+            String keywordLike = likeValue(keyword);
+            params.add(keywordLike);
+            params.add(keywordLike);
+            params.add(keywordLike);
+        }
+        if (hasText(status)) {
+            sql.append(" and status = ?");
+            params.add(status.trim());
+        }
+        if (hasText(category)) {
+            sql.append(" and category = ?");
+            params.add(category.trim());
+        }
+        sql.append(" order by id");
+        return jdbcTemplate.query(sql.toString(), params.toArray(), new BeanPropertyRowMapper<ProductItem>(ProductItem.class));
     }
 
     public ProductItem productDetail(Long id) {
@@ -55,5 +73,13 @@ public class CatalogService {
 
     public void deleteProduct(Long id) {
         jdbcTemplate.update("update products set status='DISABLED' where id=?", id);
+    }
+
+    private boolean hasText(String value) {
+        return value != null && value.trim().length() > 0;
+    }
+
+    private String likeValue(String value) {
+        return "%" + value.trim() + "%";
     }
 }

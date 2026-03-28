@@ -20,7 +20,11 @@ public class CatalogController {
     }
 
     @GetMapping("/api/products")
-    public ApiResponse<List<ProductItem>> listProducts() { return ApiResponse.success(catalogService.listProducts()); }
+    public ApiResponse<List<ProductItem>> listProducts(@RequestParam(required = false) String keyword,
+                                                      @RequestParam(required = false) String status,
+                                                      @RequestParam(required = false) String category) {
+        return ApiResponse.success(catalogService.listProducts(keyword, status, category));
+    }
 
     @GetMapping("/api/products/{id}")
     public ApiResponse<ProductItem> productDetail(@PathVariable Long id) { return ApiResponse.success(catalogService.productDetail(id)); }

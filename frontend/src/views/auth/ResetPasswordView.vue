@@ -9,6 +9,7 @@
           <p>请输入账号、重置凭证和新密码，完成密码重置。</p>
         </div>
       </div>
+      <el-alert v-if="errorMessage" :title="errorMessage" type="error" :closable="false" show-icon class="login-alert" />
       <el-form label-position="top" :model="form">
         <el-form-item label="账号">
           <el-input v-model="form.username" placeholder="请输入账号" />
@@ -38,6 +39,7 @@ import { resetPassword } from '../../api/auth'
 const router = useRouter()
 const route = useRoute()
 const submitting = ref(false)
+const errorMessage = ref('')
 const form = reactive({
   username: String(route.query.username || ''),
   resetToken: String(route.query.token || ''),
@@ -55,10 +57,13 @@ const handleSubmit = async () => {
     return
   }
   submitting.value = true
+  errorMessage.value = ''
   try {
     await resetPassword({ username: form.username, resetToken: form.resetToken, newPassword: form.newPassword })
     ElMessage.success('密码已重置，请重新登录')
     router.push('/login')
+  } catch (error: any) {
+    errorMessage.value = error?.response?.data?.message || error?.message || '密码重置失败，请稍后重试'
   } finally {
     submitting.value = false
   }

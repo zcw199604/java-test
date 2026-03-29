@@ -25,6 +25,10 @@
 | 202603281415 | missing-feature-completion | 功能 | ✅已完成 | [helloagents/history/2026-03/202603281415_missing-feature-completion](2026-03/202603281415_missing-feature-completion/) |
 | 202603290208 | mybatis-annotation-migration | 重构 | ✅已完成 | [helloagents/history/2026-03/202603290208_mybatis-annotation-migration](2026-03/202603290208_mybatis-annotation-migration/) |
 | 202603290400 | doc-test-followup | 修复 | ✅已完成 | [helloagents/history/2026-03/202603290400_doc-test-followup](2026-03/202603290400_doc-test-followup/) |
+| 202603290440 | frontend-error-handling-unify | 修复 | ✅已完成 | [helloagents/history/2026-03/202603290440_frontend-error-handling-unify](2026-03/202603290440_frontend-error-handling-unify/) |
+| 202603290600 | frontend-order-action-permission-align | 修复 | ✅已完成 | [helloagents/history/2026-03/202603290600_frontend-order-action-permission-align](2026-03/202603290600_frontend-order-action-permission-align/) |
+| 202603290635 | order-approve-permission-fix | 修复 | ✅已完成 | [helloagents/history/2026-03/202603290635_order-approve-permission-fix](2026-03/202603290635_order-approve-permission-fix/) |
+| 202603290650 | frontend-role-log-zh-display | 修复 | ✅已完成 | [helloagents/history/2026-03/202603290650_frontend-role-log-zh-display](2026-03/202603290650_frontend-role-log-zh-display/) |
 
 ---
 
@@ -50,3 +54,7 @@
 - [202603281415_missing-feature-completion](2026-03/202603281415_missing-feature-completion/) - 补齐认证前端闭环、客户/仓库维护、订单编辑、库存/报表增强与独立消息中心
 - [202603290208_mybatis-annotation-migration](2026-03/202603290208_mybatis-annotation-migration/) - 完成 MyBatis 注解 SQL 渐进迁移并收口认证兼容层
 - [202603290400_doc-test-followup](2026-03/202603290400_doc-test-followup/) - 补齐 MyBatis 迁移后的兼容测试与知识库文档收口
+- [202603290440_frontend-error-handling-unify](2026-03/202603290440_frontend-error-handling-unify/) - 统一前端业务失败提示与导出错误处理
+- [202603290600_frontend-order-action-permission-align](2026-03/202603290600_frontend-order-action-permission-align/) - 按后端规则收紧订单审批与出入库按钮显示权限
+- [202603290635_order-approve-permission-fix](2026-03/202603290635_order-approve-permission-fix/) - 新增独立审批权限，修复采购员/销售员仍显示审批按钮的问题
+- [202603290650_frontend-role-log-zh-display](2026-03/202603290650_frontend-role-log-zh-display/) - 将角色权限与日志编码展示统一改为前端中文翻译

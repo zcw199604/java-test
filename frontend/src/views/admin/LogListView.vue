@@ -22,16 +22,29 @@ import PageSection from '../../components/PageSection.vue'
 import AppTable from '../../components/AppTable.vue'
 import { exportRowsToExcel } from '../../utils/export'
 import { fetchLoginLogs, fetchOperationLogs } from '../../api/system'
+import { translateBizType, translateLoginStatus, translateOperationAction, translateOperationModule } from '../../utils/display'
 
 const keyword = ref('')
 const logType = ref('operation')
 const loginRows = ref([])
 const operationRows = ref([])
 const columns = computed(() => logType.value === 'operation'
-  ? [{ key: 'username', label: '操作人' }, { key: 'module', label: '模块' }, { key: 'action', label: '动作' }, { key: 'createdAt', label: '时间', minWidth: 180 }]
-  : [{ key: 'username', label: '账号' }, { key: 'status', label: '状态' }, { key: 'message', label: '说明' }, { key: 'createdAt', label: '时间', minWidth: 180 }])
+  ? [{ key: 'username', label: '操作人' }, { key: 'moduleText', label: '模块' }, { key: 'actionText', label: '动作' }, { key: 'bizTypeText', label: '业务类型' }, { key: 'detail', label: '说明', minWidth: 220 }, { key: 'createdAt', label: '时间', minWidth: 180 }]
+  : [{ key: 'username', label: '账号' }, { key: 'statusText', label: '状态' }, { key: 'message', label: '说明' }, { key: 'createdAt', label: '时间', minWidth: 180 }])
 
-const currentRows = computed(() => (logType.value === 'operation' ? operationRows.value : loginRows.value))
+const translatedOperationRows = computed(() => operationRows.value.map((item) => ({
+  ...item,
+  moduleText: translateOperationModule(item.module),
+  actionText: translateOperationAction(item.action),
+  bizTypeText: translateBizType(item.bizType)
+})))
+
+const translatedLoginRows = computed(() => loginRows.value.map((item) => ({
+  ...item,
+  statusText: translateLoginStatus(item.status)
+})))
+
+const currentRows = computed(() => (logType.value === 'operation' ? translatedOperationRows.value : translatedLoginRows.value))
 const filteredRows = computed(() => currentRows.value.filter((item) => !keyword.value || JSON.stringify(item).includes(keyword.value)))
 const handleExport = () => exportRowsToExcel(filteredRows.value, `${logType.value}-logs.xlsx`, 'logs')
 

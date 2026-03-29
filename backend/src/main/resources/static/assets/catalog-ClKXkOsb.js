@@ -1,1 +1,0 @@
-import{h as s}from"./index-p54TUhLT.js";const e=(t={})=>s.get("/products",{params:t}),r=()=>s.get("/categories"),a=t=>s.post("/products",t),d=(t,o)=>s.put(`/products/${t}`,o),u=t=>s.delete(`/products/${t}`);export{r as a,a as c,u as d,e as f,d as u};

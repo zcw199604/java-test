@@ -24,10 +24,10 @@
       <AppTable :columns="columns" :rows="filteredRows">
         <template #status="{ value }"><el-tag :type="statusTypeMap[value] || 'info'">{{ statusLabelMap[value] || value }}</el-tag></template>
         <template #actions="{ row }">
-          <el-button v-permission="['purchase:edit', 'inventory:edit']" link type="primary" @click="openAuditDialog(row)" v-if="row.status === 'CREATED'">审核</el-button>
+          <el-button v-permission="'order:approve'" link type="primary" @click="openAuditDialog(row)" v-if="row.status === 'CREATED'">审核</el-button>
           <el-button v-permission="'purchase:edit'" link type="danger" @click="handleCancel(row)" v-if="row.status === 'CREATED' || row.status === 'REJECTED'">取消</el-button>
-          <el-button v-permission="['purchase:edit', 'inventory:edit']" link type="warning" @click="handleReceive(row)" v-if="row.status === 'APPROVED'">到货</el-button>
-          <el-button v-permission="['purchase:edit', 'inventory:edit']" link type="success" @click="handleInbound(row)" v-if="row.status === 'RECEIVED'">入库</el-button>
+          <el-button v-permission="'order:approve'" link type="warning" @click="handleReceive(row)" v-if="row.status === 'APPROVED'">到货</el-button>
+          <el-button v-permission="'order:approve'" link type="success" @click="handleInbound(row)" v-if="row.status === 'RECEIVED'">入库</el-button>
         </template>
       </AppTable>
     </PageSection>

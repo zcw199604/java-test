@@ -19,6 +19,7 @@ const adminPermissions = [
   'bulletin:view',
   'inventory:view',
   'inventory:edit',
+  'order:approve',
   'report:view',
   'trace:view',
   'audit:view'
@@ -29,7 +30,7 @@ export const rolePermissionMap: Record<string, string[]> = {
   ADMIN: adminPermissions,
   PURCHASER: ['dashboard:view', 'profile:view', 'message:view', 'purchase:view', 'purchase:edit', 'report:view', 'trace:view'],
   SELLER: ['dashboard:view', 'profile:view', 'message:view', 'sale:view', 'sale:edit', 'bulletin:view', 'report:view', 'trace:view'],
-  KEEPER: ['dashboard:view', 'profile:view', 'message:view', 'inventory:view', 'inventory:edit', 'report:view', 'trace:view']
+  KEEPER: ['dashboard:view', 'profile:view', 'message:view', 'inventory:view', 'inventory:edit', 'order:approve', 'report:view', 'trace:view']
 }
 
 const backendToFrontendPermissionMap: Record<string, string[]> = {
@@ -41,12 +42,12 @@ const backendToFrontendPermissionMap: Record<string, string[]> = {
   'purchase:create': ['purchase:view', 'purchase:edit'],
   'purchase:cancel': ['purchase:edit'],
   'purchase:import': ['purchase:edit'],
-  'purchase:inbound': ['purchase:edit', 'inventory:edit'],
+  'purchase:inbound': ['purchase:edit'],
   'sales:view': ['sale:view'],
   'sales:create': ['sale:view', 'sale:edit'],
   'sales:cancel': ['sale:edit'],
   'sales:import': ['sale:edit'],
-  'sales:outbound': ['sale:edit', 'inventory:edit'],
+  'sales:outbound': ['sale:edit'],
   'sales:payment': ['sale:edit'],
   'inventory:view': ['inventory:view'],
   'inventory:manage': ['inventory:view', 'inventory:edit'],

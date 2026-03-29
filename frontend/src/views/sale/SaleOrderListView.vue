@@ -13,9 +13,9 @@
       <AppTable :columns="columns" :rows="rows">
         <template #status="{ value }"><el-tag :type="statusTypeMap[value] || 'info'">{{ statusLabelMap[value] || value }}</el-tag></template>
         <template #actions="{ row }">
-          <el-button v-permission="['sale:edit', 'inventory:edit']" link type="primary" @click="openAuditDialog(row)" v-if="row.status === 'CREATED'">审核</el-button>
+          <el-button v-permission="'order:approve'" link type="primary" @click="openAuditDialog(row)" v-if="row.status === 'CREATED'">审核</el-button>
           <el-button v-permission="'sale:edit'" link type="danger" @click="handleCancel(row)" v-if="row.status === 'CREATED' || row.status === 'REJECTED'">取消</el-button>
-          <el-button v-permission="['sale:edit', 'inventory:edit']" link type="warning" @click="handleOutbound(row)" v-if="row.status === 'APPROVED'">出库</el-button>
+          <el-button v-permission="'order:approve'" link type="warning" @click="handleOutbound(row)" v-if="row.status === 'APPROVED'">出库</el-button>
           <el-button v-permission="'sale:edit'" link type="success" @click="handlePayment(row)" v-if="row.status !== 'PAID' && row.status !== 'CREATED' && row.status !== 'APPROVED' && row.status !== 'REJECTED' && row.status !== 'CANCELLED'">回款</el-button>
         </template>
       </AppTable>

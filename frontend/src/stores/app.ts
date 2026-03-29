@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { buildMenuGroups, resolvePermissions, resolveRoleCode } from '../utils/access'
+import { translateRoleName } from '../utils/display'
 import type { MenuGroup, NotificationItem, UserProfile } from '../types/common'
 
 const SYSTEM_NAME = '烟草采销存协同管理平台'
@@ -32,7 +33,7 @@ export const useAppStore = defineStore('app', {
   }),
   getters: {
     userName: (state): string => state.profile?.realName || state.profile?.username || '未登录用户',
-    roleName: (state): string => state.profile?.roleName || state.profile?.role_name || state.roleCode || '访客',
+    roleName: (state): string => state.profile?.roleName || state.profile?.role_name || translateRoleName(state.roleCode, '访客'),
     unreadCount: (state): number => state.notifications.filter((item) => !item.read).length
   },
   actions: {

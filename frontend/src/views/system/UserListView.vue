@@ -9,6 +9,7 @@ import { onMounted, ref } from 'vue'
 import DataPanel from '../../components/DataPanel.vue'
 import SimpleTable from '../../components/SimpleTable.vue'
 import { fetchUsers } from '../../api/system'
+import { translateRoleName } from '../../utils/display'
 
 const rows = ref([])
 const columns = [
@@ -22,7 +23,7 @@ const columns = [
 onMounted(async () => {
   try {
     const result = await fetchUsers()
-    rows.value = result.data.records || result.data || []
+    rows.value = (result.data.records || result.data || []).map((item) => ({ ...item, roleName: item.roleName || translateRoleName(item.roleCode) }))
   } catch (error) {
     rows.value = []
   }

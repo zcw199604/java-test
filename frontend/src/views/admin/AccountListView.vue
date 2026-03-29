@@ -80,6 +80,7 @@ import { createUser, deleteUser, fetchUserDetail, fetchUsers, fetchRoles, update
 import PageSection from '../../components/PageSection.vue'
 import AppTable from '../../components/AppTable.vue'
 import { useAppStore } from '../../stores/app'
+import { translateRoleName } from '../../utils/display'
 
 const appStore = useAppStore()
 const loading = ref(false)
@@ -129,7 +130,7 @@ const assignableRoles = computed(() => {
 
 const canManageRow = (row) => appStore.roleCode === 'SUPER_ADMIN' || !['SUPER_ADMIN', 'ADMIN'].includes(row.roleCode)
 
-const filteredRows = computed(() => rows.value.filter((item) => {
+const filteredRows = computed(() => rows.value.map((item) => ({ ...item, roleName: item.roleName || translateRoleName(item.roleCode) })).filter((item) => {
   const matchKeyword = !keyword.value || JSON.stringify(item).includes(keyword.value)
   const matchStatus = !statusFilter.value || item.status === statusFilter.value
   return matchKeyword && matchStatus

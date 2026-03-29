@@ -154,6 +154,8 @@ const handleForgotPassword = async () => {
     ElMessage.success('已生成重置凭证，正在跳转到重置页面')
     forgotVisible.value = false
     router.push({ path: '/reset-password', query: { username: forgotForm.username, token: token || '' } })
+  } catch (error: any) {
+    errorMessage.value = error?.response?.data?.message || error?.message || '获取重置凭证失败，请稍后重试'
   } finally {
     forgotSubmitting.value = false
     await refreshCaptcha()

@@ -8,7 +8,7 @@
             <el-radio-button v-for="item in roles" :key="item.code" :label="item.code">{{ item.name }}</el-radio-button>
           </el-radio-group>
           <el-descriptions v-if="currentRole" :column="1" border class="role-meta">
-            <el-descriptions-item label="角色编码">{{ currentRole.code }}</el-descriptions-item>
+            <el-descriptions-item label="角色标识">{{ currentRole.displayName }}</el-descriptions-item>
             <el-descriptions-item label="角色名称">{{ currentRole.name }}</el-descriptions-item>
             <el-descriptions-item label="备注">{{ currentRole.remark || '—' }}</el-descriptions-item>
           </el-descriptions>
@@ -29,6 +29,7 @@
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { fetchPermissions, fetchRoles, updateRole } from '../../api/system'
+import { translatePermissionModule, translateRoleName } from '../../utils/display'
 import PageSection from '../../components/PageSection.vue'
 
 const treeRef = ref(null)
@@ -44,9 +45,9 @@ const treeData = computed(() => {
   permissions.value.forEach((item) => {
     const group = item.module || 'OTHER'
     if (!groups[group]) {
-      groups[group] = { id: `group:${group}`, label: group, children: [] }
+      groups[group] = { id: `group:${group}`, label: translatePermissionModule(group), children: [] }
     }
-    groups[group].children.push({ id: item.code, label: `${item.name} (${item.code})` })
+    groups[group].children.push({ id: item.code, label: item.name, disabledLabel: item.code })
   })
   return Object.values(groups)
 })
@@ -80,7 +81,7 @@ onMounted(async () => {
     fetchRoles().catch(() => ({ data: [] })),
     fetchPermissions().catch(() => ({ data: [] }))
   ])
-  roles.value = (roleResult.data || []).map((item) => ({ ...item, permissions: item.permissions || [] }))
+  roles.value = (roleResult.data || []).map((item) => ({ ...item, displayName: item.name || translateRoleName(item.code), permissions: item.permissions || [] }))
   permissions.value = permissionResult.data || []
   if (roles.value.length > 0) {
     currentRoleCode.value = roles.value[0].code

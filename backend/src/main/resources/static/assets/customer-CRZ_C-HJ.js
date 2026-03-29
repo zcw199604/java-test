@@ -1,1 +1,0 @@
-import{h as t}from"./index-BZkCSHOp.js";const c=(s={})=>t.get("/customers",{params:s}),r=s=>t.get(`/customers/${s}`),u=s=>t.post("/customers",s),m=(s,e)=>t.put(`/customers/${s}`,e),a=s=>t.delete(`/customers/${s}`);export{r as a,u as c,a as d,c as f,m as u};

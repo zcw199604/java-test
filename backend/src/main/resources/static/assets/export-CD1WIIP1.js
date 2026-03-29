@@ -1,1 +1,0 @@
-import{u as o,w as n,F as c}from"./vendor-export-BmdveHhX.js";const w=(t,s,a="Sheet1")=>{const p=o.json_to_sheet(t),e=o.book_new();o.book_append_sheet(e,p,a);const r=n(e,{bookType:"xlsx",type:"array"});c.saveAs(new Blob([r],{type:"application/octet-stream"}),s)};export{w as e};

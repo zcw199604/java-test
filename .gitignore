@@ -14,3 +14,6 @@ frontend/dist/
 
 # OS
 .DS_Store
+
+# Generated frontend bundle
+backend/src/main/resources/static/

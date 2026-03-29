@@ -1,12 +1,12 @@
 package com.example.tobacco.auth;
 
 import com.example.tobacco.audit.AuditService;
+import com.example.tobacco.mapper.auth.AuthMapper;
 import com.example.tobacco.model.UserProfile;
 import com.example.tobacco.util.PasswordCodec;
 import org.apache.shiro.authc.UsernamePasswordToken;
 import org.apache.shiro.mgt.SecurityManager;
 import org.apache.shiro.subject.Subject;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
@@ -23,13 +23,13 @@ import java.util.UUID;
 @Service
 public class AuthService {
 
-    private final JdbcTemplate jdbcTemplate;
+    private final AuthMapper authMapper;
     private final PasswordCodec passwordCodec;
     private final AuditService auditService;
     private final SecurityManager securityManager;
 
-    public AuthService(JdbcTemplate jdbcTemplate, PasswordCodec passwordCodec, AuditService auditService, SecurityManager securityManager) {
-        this.jdbcTemplate = jdbcTemplate;
+    public AuthService(AuthMapper authMapper, PasswordCodec passwordCodec, AuditService auditService, SecurityManager securityManager) {
+        this.authMapper = authMapper;
         this.passwordCodec = passwordCodec;
         this.auditService = auditService;
         this.securityManager = securityManager;
@@ -51,20 +51,18 @@ public class AuthService {
 
     public LoginResponse login(LoginRequest request, HttpServletRequest httpRequest) {
         validateCaptchaIfPresent(request.getCaptchaKey(), request.getCaptchaCode());
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "select u.id, u.username, u.password, u.real_name, u.role_code, u.status, r.name as role_name from users u left join roles r on u.role_code = r.code where u.username = ?",
-                request.getUsername());
-        if (rows.isEmpty()) {
+        Map<String, Object> row = authMapper.selectLoginUserByUsername(request.getUsername());
+        if (row == null || row.isEmpty()) {
             auditService.logLogin(null, request.getUsername(), "FAIL", "用户名不存在", clientIp(httpRequest), clientAgent(httpRequest));
             throw new IllegalArgumentException("用户名或密码错误");
         }
-        Map<String, Object> row = rows.get(0);
-        if (!passwordCodec.matches(request.getUsername(), request.getPassword(), String.valueOf(row.get("password")))) {
-            auditService.logLogin(((Number) row.get("id")).longValue(), request.getUsername(), "FAIL", "密码错误", clientIp(httpRequest), clientAgent(httpRequest));
+        Long userId = longValue(row.get("id"));
+        if (!passwordCodec.matches(request.getUsername(), request.getPassword(), stringValue(row.get("password")))) {
+            auditService.logLogin(userId, request.getUsername(), "FAIL", "密码错误", clientIp(httpRequest), clientAgent(httpRequest));
             throw new IllegalArgumentException("用户名或密码错误");
         }
-        if (!"ENABLED".equals(String.valueOf(row.get("status")))) {
-            auditService.logLogin(((Number) row.get("id")).longValue(), request.getUsername(), "FAIL", "账号已禁用", clientIp(httpRequest), clientAgent(httpRequest));
+        if (!"ENABLED".equals(stringValue(row.get("status")))) {
+            auditService.logLogin(userId, request.getUsername(), "FAIL", "账号已禁用", clientIp(httpRequest), clientAgent(httpRequest));
             throw new IllegalArgumentException("当前账号已禁用");
         }
 
@@ -72,31 +70,30 @@ public class AuthService {
         subject.login(new UsernamePasswordToken(request.getUsername(), request.getPassword()));
 
         String token = UUID.randomUUID().toString().replace("-", "");
-        Long userId = ((Number) row.get("id")).longValue();
-        insertUserSession(token, userId, request.getUsername(), String.valueOf(row.get("role_code")), LocalDateTime.now().plusHours(12));
+        insertUserSession(token, userId, request.getUsername(), stringValue(row.get("roleCode")), LocalDateTime.now().plusHours(12));
         auditService.logLogin(userId, request.getUsername(), "SUCCESS", "登录成功", clientIp(httpRequest), clientAgent(httpRequest));
         auditService.logOperation(userId, request.getUsername(), "AUTH", "LOGIN", "USER_SESSION", userId, "用户登录");
         return buildResponse(toProfile(row), token);
     }
 
     public LoginResponse currentProfile(String username, String token) {
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "select u.id, u.username, u.real_name, u.role_code, u.status, r.name as role_name from users u left join roles r on u.role_code = r.code where u.username = ?",
-                username);
-        if (rows.isEmpty()) {
+        Map<String, Object> row = authMapper.selectProfileByUsername(username);
+        if (row == null || row.isEmpty()) {
             throw new IllegalArgumentException("用户不存在");
         }
-        return buildResponse(toProfile(rows.get(0)), token);
+        return buildResponse(toProfile(row), token);
     }
 
     public void logout(String token) {
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "select user_id as userId from user_sessions where " + userSessionTokenColumn() + "=? order by id desc limit 1",
+        Map<String, Object> row = authMapper.selectLatestSessionByToken(
+                userSessionHasUsernameColumn(),
+                userSessionHasRoleCodeColumn(),
+                userSessionTokenColumn(),
+                userSessionExpireColumn(),
                 token);
-        jdbcTemplate.update("update user_sessions set status='LOGOUT' where " + userSessionTokenColumn() + "=?", token);
-        if (!rows.isEmpty()) {
-            Map<String, Object> row = rows.get(0);
-            Long userId = row.get("userId") == null ? null : ((Number) row.get("userId")).longValue();
+        authMapper.updateSessionStatus(userSessionTokenColumn(), "LOGOUT", token);
+        if (row != null && !row.isEmpty()) {
+            Long userId = longValue(row.get("userId"));
             String username = findUsernameByUserId(userId);
             auditService.logOperation(userId, username, "AUTH", "LOGOUT", "USER_SESSION", userId, "用户登出");
         }
@@ -104,11 +101,10 @@ public class AuthService {
 
     public Map<String, String> forgotPassword(ForgotPasswordRequest request) {
         validateCaptcha(request.getCaptchaKey(), request.getCaptchaCode());
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList("select id from users where username=?", request.getUsername());
-        if (rows.isEmpty()) {
+        Long userId = authMapper.selectUserIdByUsername(request.getUsername());
+        if (userId == null) {
             throw new IllegalArgumentException("用户不存在");
         }
-        Long userId = ((Number) rows.get(0).get("id")).longValue();
         String resetToken = UUID.randomUUID().toString().replace("-", "");
         insertPasswordResetRecord(userId, request.getUsername(), resetToken, LocalDateTime.now().plusMinutes(30));
         auditService.logOperation(userId, request.getUsername(), "AUTH", "FORGOT_PASSWORD", "PASSWORD_RESET", userId, "发起密码重置");
@@ -120,32 +116,26 @@ public class AuthService {
     }
 
     public void resetPassword(ResetPasswordRequest request) {
-        String tokenColumn = passwordResetTokenColumn();
-        String expireColumn = passwordResetExpireColumn();
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "select pr.id, pr.user_id as userId, pr.status, pr." + expireColumn + " as expireAt from password_reset_records pr " +
-                        "left join users u on pr.user_id = u.id where u.username=? and pr." + tokenColumn + "=? order by pr.id desc limit 1",
-                request.getUsername(), request.getResetToken());
-        if (rows.isEmpty()) {
+        Map<String, Object> row = authMapper.selectLatestPasswordReset(
+                passwordResetTokenColumn(),
+                passwordResetExpireColumn(),
+                request.getUsername(),
+                request.getResetToken());
+        if (row == null || row.isEmpty()) {
             throw new IllegalArgumentException("重置凭证无效");
         }
-        Map<String, Object> row = rows.get(0);
         LocalDateTime expireAt = toLocalDateTime(row.get("expireAt"));
-        if (expireAt == null || expireAt.isBefore(LocalDateTime.now()) || !"NEW".equals(String.valueOf(row.get("status")))) {
+        if (expireAt == null || expireAt.isBefore(LocalDateTime.now()) || !"NEW".equals(stringValue(row.get("status")))) {
             throw new IllegalArgumentException("重置凭证已失效");
         }
         String encoded = passwordCodec.encode(request.getUsername(), request.getNewPassword());
-        jdbcTemplate.update("update users set password=? where username=?", encoded, request.getUsername());
-        if (columnExists("password_reset_records", "used_at")) {
-            jdbcTemplate.update("update password_reset_records set status='USED', used_at=now() where id=?", ((Number) row.get("id")).longValue());
-        } else {
-            jdbcTemplate.update("update password_reset_records set status='USED' where id=?", ((Number) row.get("id")).longValue());
-        }
-        auditService.logOperation(((Number) row.get("userId")).longValue(), request.getUsername(), "AUTH", "RESET_PASSWORD", "PASSWORD_RESET", ((Number) row.get("id")).longValue(), "完成密码重置");
+        authMapper.updateUserPasswordByUsername(request.getUsername(), encoded);
+        authMapper.updatePasswordResetUsed(passwordResetHasUsedAtColumn(), longValue(row.get("id")));
+        auditService.logOperation(longValue(row.get("userId")), request.getUsername(), "AUTH", "RESET_PASSWORD", "PASSWORD_RESET", longValue(row.get("id")), "完成密码重置");
     }
 
     public List<String> permissions(String roleCode) {
-        return jdbcTemplate.queryForList("select permission_code from role_permissions where role_code=? order by permission_code", String.class, roleCode);
+        return authMapper.selectPermissionsByRoleCode(roleCode);
     }
 
     public List<String> menus(String roleCode) {
@@ -177,12 +167,12 @@ public class AuthService {
 
     private UserProfile toProfile(Map<String, Object> row) {
         UserProfile profile = new UserProfile();
-        profile.setId(((Number) row.get("id")).longValue());
-        profile.setUsername(String.valueOf(row.get("username")));
-        profile.setRealName(String.valueOf(row.get("real_name")));
-        profile.setRoleCode(String.valueOf(row.get("role_code")));
-        profile.setRoleName(String.valueOf(row.get("role_name")));
-        profile.setStatus(String.valueOf(row.get("status")));
+        profile.setId(longValue(row.get("id")));
+        profile.setUsername(stringValue(row.get("username")));
+        profile.setRealName(stringValue(row.get("realName")));
+        profile.setRoleCode(stringValue(row.get("roleCode")));
+        profile.setRoleName(stringValue(row.get("roleName")));
+        profile.setStatus(stringValue(row.get("status")));
         return profile;
     }
 
@@ -197,60 +187,39 @@ public class AuthService {
         if (!hasText(captchaKey) || !hasText(captchaCode)) {
             throw new IllegalArgumentException("验证码不能为空");
         }
-        String keyColumn = captchaKeyColumn();
-        String codeColumn = captchaCodeColumn();
-        String expireColumn = captchaExpireColumn();
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "select id, " + codeColumn + " as captchaCode, " + expireColumn + " as expireAt, status from captcha_records where " + keyColumn + "=? order by id desc limit 1",
+        Map<String, Object> row = authMapper.selectLatestCaptchaRecord(
+                captchaKeyColumn(),
+                captchaCodeColumn(),
+                captchaExpireColumn(),
                 captchaKey);
-        if (rows.isEmpty()) {
+        if (row == null || row.isEmpty()) {
             throw new IllegalArgumentException("验证码无效");
         }
-        Map<String, Object> row = rows.get(0);
         LocalDateTime expireAt = toLocalDateTime(row.get("expireAt"));
-        if (!"NEW".equals(String.valueOf(row.get("status"))) || expireAt == null || expireAt.isBefore(LocalDateTime.now())) {
+        if (!"NEW".equals(stringValue(row.get("status"))) || expireAt == null || expireAt.isBefore(LocalDateTime.now())) {
             throw new IllegalArgumentException("验证码已失效");
         }
-        if (!String.valueOf(row.get("captchaCode")).equals(captchaCode)) {
+        if (!stringValue(row.get("captchaCode")).equals(captchaCode)) {
             throw new IllegalArgumentException("验证码错误");
         }
-        jdbcTemplate.update("update captcha_records set status='USED' where id=?", ((Number) row.get("id")).longValue());
+        authMapper.markCaptchaUsed(longValue(row.get("id")));
     }
 
     private void insertCaptchaRecord(String captchaKey, String captchaCode, LocalDateTime expireAt) {
-        List<String> columns = new ArrayList<String>();
-        List<Object> values = new ArrayList<Object>();
-        columns.add(captchaKeyColumn());
-        values.add(captchaKey);
-        columns.add(captchaCodeColumn());
-        values.add(captchaCode);
-        columns.add(captchaExpireColumn());
-        values.add(Timestamp.valueOf(expireAt));
-        columns.add("status");
-        values.add("NEW");
-        jdbcTemplate.update("insert into captcha_records(" + join(columns) + ") values(" + placeholders(columns.size()) + ")", values.toArray());
+        authMapper.insertCaptchaRecord(captchaKeyColumn(), captchaCodeColumn(), captchaExpireColumn(), captchaKey, captchaCode, expireAt);
     }
 
     private void insertUserSession(String token, Long userId, String username, String roleCode, LocalDateTime expireAt) {
-        List<String> columns = new ArrayList<String>();
-        List<Object> values = new ArrayList<Object>();
-        columns.add(userSessionTokenColumn());
-        values.add(token);
-        columns.add("user_id");
-        values.add(userId);
-        if (columnExists("user_sessions", "username")) {
-            columns.add("username");
-            values.add(username);
-        }
-        if (columnExists("user_sessions", "role_code")) {
-            columns.add("role_code");
-            values.add(roleCode);
-        }
-        columns.add(userSessionExpireColumn());
-        values.add(Timestamp.valueOf(expireAt));
-        columns.add("status");
-        values.add("ACTIVE");
-        jdbcTemplate.update("insert into user_sessions(" + join(columns) + ") values(" + placeholders(columns.size()) + ")", values.toArray());
+        authMapper.insertUserSession(
+                userSessionHasUsernameColumn(),
+                userSessionHasRoleCodeColumn(),
+                userSessionTokenColumn(),
+                userSessionExpireColumn(),
+                token,
+                userId,
+                username,
+                roleCode,
+                expireAt);
     }
 
     private String findUsernameByUserId(Long userId) {
@@ -258,28 +227,21 @@ public class AuthService {
             return null;
         }
         try {
-            return jdbcTemplate.queryForObject("select username from users where id=?", String.class, userId);
+            return authMapper.selectUsernameByUserId(userId);
         } catch (Exception e) {
             return null;
         }
     }
 
     private void insertPasswordResetRecord(Long userId, String username, String resetToken, LocalDateTime expireAt) {
-        List<String> columns = new ArrayList<String>();
-        List<Object> values = new ArrayList<Object>();
-        columns.add("user_id");
-        values.add(userId);
-        if (columnExists("password_reset_records", "username")) {
-            columns.add("username");
-            values.add(username);
-        }
-        columns.add(passwordResetTokenColumn());
-        values.add(resetToken);
-        columns.add(passwordResetExpireColumn());
-        values.add(Timestamp.valueOf(expireAt));
-        columns.add("status");
-        values.add("NEW");
-        jdbcTemplate.update("insert into password_reset_records(" + join(columns) + ") values(" + placeholders(columns.size()) + ")", values.toArray());
+        authMapper.insertPasswordResetRecord(
+                passwordResetHasUsernameColumn(),
+                passwordResetTokenColumn(),
+                passwordResetExpireColumn(),
+                userId,
+                username,
+                resetToken,
+                expireAt);
     }
 
     private String captchaKeyColumn() {
@@ -302,6 +264,14 @@ public class AuthService {
         return tableColumn("user_sessions", "expire_at", "expired_at");
     }
 
+    private boolean userSessionHasUsernameColumn() {
+        return columnExists("user_sessions", "username");
+    }
+
+    private boolean userSessionHasRoleCodeColumn() {
+        return columnExists("user_sessions", "role_code");
+    }
+
     private String passwordResetTokenColumn() {
         return tableColumn("password_reset_records", "reset_token", "token");
     }
@@ -310,36 +280,33 @@ public class AuthService {
         return tableColumn("password_reset_records", "expire_at", "expired_at");
     }
 
+    private boolean passwordResetHasUsernameColumn() {
+        return columnExists("password_reset_records", "username");
+    }
+
+    private boolean passwordResetHasUsedAtColumn() {
+        return columnExists("password_reset_records", "used_at");
+    }
+
     private String tableColumn(String tableName, String primary, String fallback) {
         return columnExists(tableName, primary) ? primary : fallback;
     }
 
     private boolean columnExists(String tableName, String columnName) {
-        Integer count = jdbcTemplate.queryForObject(
-                "select count(*) from information_schema.columns where table_schema = database() and table_name = ? and column_name = ?",
-                Integer.class,
-                tableName,
-                columnName);
+        Integer count = authMapper.countTableColumn(tableName, columnName);
         return count != null && count > 0;
-    }
-
-    private String join(List<String> columns) {
-        return String.join(",", columns);
-    }
-
-    private String placeholders(int size) {
-        StringBuilder builder = new StringBuilder();
-        for (int i = 0; i < size; i++) {
-            if (i > 0) {
-                builder.append(',');
-            }
-            builder.append('?');
-        }
-        return builder.toString();
     }
 
     private boolean hasText(String value) {
         return value != null && value.trim().length() > 0;
+    }
+
+    private Long longValue(Object value) {
+        return value == null ? null : ((Number) value).longValue();
+    }
+
+    private String stringValue(Object value) {
+        return value == null ? "" : String.valueOf(value);
     }
 
     private LocalDateTime toLocalDateTime(Object value) {

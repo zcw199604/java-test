@@ -23,6 +23,8 @@
 | 202603281045 | role-hierarchy-fix | 修复 | ✅已完成 | [helloagents/history/2026-03/202603281045_role-hierarchy-fix](2026-03/202603281045_role-hierarchy-fix/) |
 | 202603281120 | admin-account-protection | 修复 | ✅已完成 | [helloagents/history/2026-03/202603281120_admin-account-protection](2026-03/202603281120_admin-account-protection/) |
 | 202603281415 | missing-feature-completion | 功能 | ✅已完成 | [helloagents/history/2026-03/202603281415_missing-feature-completion](2026-03/202603281415_missing-feature-completion/) |
+| 202603290208 | mybatis-annotation-migration | 重构 | ✅已完成 | [helloagents/history/2026-03/202603290208_mybatis-annotation-migration](2026-03/202603290208_mybatis-annotation-migration/) |
+| 202603290400 | doc-test-followup | 修复 | ✅已完成 | [helloagents/history/2026-03/202603290400_doc-test-followup](2026-03/202603290400_doc-test-followup/) |
 
 ---
 
@@ -46,3 +48,5 @@
 - [202603281130_inventory-warning-notify-fix](2026-03/202603281130_inventory-warning-notify-fix/) - 为库存调拨与盘点接入低库存预警消息通知
 
 - [202603281415_missing-feature-completion](2026-03/202603281415_missing-feature-completion/) - 补齐认证前端闭环、客户/仓库维护、订单编辑、库存/报表增强与独立消息中心
+- [202603290208_mybatis-annotation-migration](2026-03/202603290208_mybatis-annotation-migration/) - 完成 MyBatis 注解 SQL 渐进迁移并收口认证兼容层
+- [202603290400_doc-test-followup](2026-03/202603290400_doc-test-followup/) - 补齐 MyBatis 迁移后的兼容测试与知识库文档收口

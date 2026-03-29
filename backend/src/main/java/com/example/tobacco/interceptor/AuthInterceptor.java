@@ -1,6 +1,6 @@
 package com.example.tobacco.interceptor;
 
-import org.springframework.jdbc.core.JdbcTemplate;
+import com.example.tobacco.mapper.auth.AuthMapper;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
@@ -8,16 +8,15 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Map;
 
 @Component
 public class AuthInterceptor implements HandlerInterceptor {
 
-    private final JdbcTemplate jdbcTemplate;
+    private final AuthMapper authMapper;
 
-    public AuthInterceptor(JdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
+    public AuthInterceptor(AuthMapper authMapper) {
+        this.authMapper = authMapper;
     }
 
     @Override
@@ -32,17 +31,21 @@ public class AuthInterceptor implements HandlerInterceptor {
             return unauthorized(response, "未登录或令牌缺失");
         }
         String token = auth.substring(7);
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList(buildSessionQuery(), token);
-        if (rows.isEmpty()) {
+        Map<String, Object> row = authMapper.selectLatestSessionByToken(
+                columnExists("user_sessions", "username"),
+                columnExists("user_sessions", "role_code"),
+                userSessionTokenColumn(),
+                userSessionExpireColumn(),
+                token);
+        if (row == null || row.isEmpty()) {
             return unauthorized(response, "登录已过期或令牌无效");
         }
-        Map<String, Object> row = rows.get(0);
         LocalDateTime expireAt = toLocalDateTime(row.get("expireAt"));
         if (!"ACTIVE".equals(String.valueOf(row.get("status"))) || expireAt == null || expireAt.isBefore(LocalDateTime.now())) {
             return unauthorized(response, "登录已过期或令牌无效");
         }
         if (columnExists("user_sessions", "last_access_at")) {
-            jdbcTemplate.update("update user_sessions set last_access_at=now() where " + userSessionTokenColumn() + "=?", token);
+            authMapper.touchSessionLastAccess(userSessionTokenColumn(), token);
         }
         String username = hasText(stringValue(row.get("sessionUsername"))) ? stringValue(row.get("sessionUsername")) : stringValue(row.get("username"));
         String roleCode = hasText(stringValue(row.get("sessionRoleCode"))) ? stringValue(row.get("sessionRoleCode")) : stringValue(row.get("userRoleCode"));
@@ -51,27 +54,6 @@ public class AuthInterceptor implements HandlerInterceptor {
         request.setAttribute("username", username);
         request.setAttribute("roleCode", roleCode);
         return true;
-    }
-
-    private String buildSessionQuery() {
-        StringBuilder sql = new StringBuilder();
-        sql.append("select us.user_id as userId, ");
-        if (columnExists("user_sessions", "username")) {
-            sql.append("us.username as sessionUsername, ");
-        } else {
-            sql.append("null as sessionUsername, ");
-        }
-        if (columnExists("user_sessions", "role_code")) {
-            sql.append("us.role_code as sessionRoleCode, ");
-        } else {
-            sql.append("null as sessionRoleCode, ");
-        }
-        sql.append("u.username, u.role_code as userRoleCode, us.")
-                .append(userSessionExpireColumn())
-                .append(" as expireAt, us.status from user_sessions us left join users u on us.user_id = u.id where us.")
-                .append(userSessionTokenColumn())
-                .append("=? order by us.id desc limit 1");
-        return sql.toString();
     }
 
     private String userSessionTokenColumn() {
@@ -83,11 +65,7 @@ public class AuthInterceptor implements HandlerInterceptor {
     }
 
     private boolean columnExists(String tableName, String columnName) {
-        Integer count = jdbcTemplate.queryForObject(
-                "select count(*) from information_schema.columns where table_schema = database() and table_name = ? and column_name = ?",
-                Integer.class,
-                tableName,
-                columnName);
+        Integer count = authMapper.countTableColumn(tableName, columnName);
         return count != null && count > 0;
     }
 

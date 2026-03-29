@@ -2,7 +2,7 @@ package com.example.tobacco.service;
 
 import com.example.tobacco.dto.DashboardModuleDto;
 import com.example.tobacco.dto.DashboardSummaryDto;
-import org.springframework.jdbc.core.JdbcTemplate;
+import com.example.tobacco.mapper.dashboard.DashboardMapper;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
@@ -10,18 +10,18 @@ import java.util.Arrays;
 @Service
 public class DashboardService {
 
-    private final JdbcTemplate jdbcTemplate;
+    private final DashboardMapper dashboardMapper;
 
-    public DashboardService(JdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
+    public DashboardService(DashboardMapper dashboardMapper) {
+        this.dashboardMapper = dashboardMapper;
     }
 
     public DashboardSummaryDto getSummary() {
         DashboardSummaryDto summary = new DashboardSummaryDto();
-        summary.setPurchaseCount(queryCount("purchase_orders"));
-        summary.setInventoryCount(queryCount("inventories"));
-        summary.setSalesCount(queryCount("sales_orders"));
-        summary.setWarningCount(queryWarningCount());
+        summary.setPurchaseCount(dashboardMapper.countPurchases());
+        summary.setInventoryCount(dashboardMapper.countInventories());
+        summary.setSalesCount(dashboardMapper.countSales());
+        summary.setWarningCount(dashboardMapper.countWarnings());
         summary.setModules(Arrays.asList(
                 new DashboardModuleDto("users", "用户管理", "系统用户与角色维护", "/system/users"),
                 new DashboardModuleDto("roles", "角色权限", "角色与权限配置总览", "/system/roles"),
@@ -34,13 +34,5 @@ public class DashboardService {
                 new DashboardModuleDto("report", "报表中心", "采购、销售、库存汇总与趋势分析", "/report/center")
         ));
         return summary;
-    }
-
-    private Integer queryCount(String table) {
-        return jdbcTemplate.queryForObject("select count(1) from " + table, Integer.class);
-    }
-
-    private Integer queryWarningCount() {
-        return jdbcTemplate.queryForObject("select count(1) from inventories where quantity <= warning_threshold", Integer.class);
     }
 }

@@ -25,3 +25,8 @@ app:
   jwt:
     secret: ${JWT_SECRET:TobaccoPlatformSecretKeyForDemo2026TobaccoPlatform}
     expire-hours: 12
+
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+    call-setters-on-nulls: true

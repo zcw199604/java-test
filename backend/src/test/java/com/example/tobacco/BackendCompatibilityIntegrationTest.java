@@ -11,6 +11,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -46,6 +47,136 @@ class BackendCompatibilityIntegrationTest {
         JsonNode loginJson = objectMapper.readTree(loginResult.getResponse().getContentAsString());
         assertThat(loginJson.path("code").asInt()).isZero();
         assertThat(loginJson.path("data").path("token").asText()).isNotBlank();
+    }
+
+    @Test
+    void shouldRecordLoginLogoutOperationLogsAndKeepMessageReadFlow() throws Exception {
+        String token = loginAsAdmin();
+        mockMvc.perform(post("/api/auth/logout").header("Authorization", bearer(token)))
+                .andExpect(status().isOk());
+
+        String verifyToken = loginAsAdmin();
+        MvcResult loginLogsResult = mockMvc.perform(get("/api/logs/login")
+                        .header("Authorization", bearer(verifyToken)))
+                .andExpect(status().isOk())
+                .andReturn();
+        JsonNode loginLogs = objectMapper.readTree(loginLogsResult.getResponse().getContentAsString()).path("data");
+        assertThat(loginLogs.isArray()).isTrue();
+        assertThat(loginLogs.findValuesAsText("status")).contains("SUCCESS");
+
+        MvcResult operationLogsResult = mockMvc.perform(get("/api/logs/operation")
+                        .header("Authorization", bearer(verifyToken)))
+                .andExpect(status().isOk())
+                .andReturn();
+        JsonNode operationLogs = objectMapper.readTree(operationLogsResult.getResponse().getContentAsString()).path("data");
+        assertThat(operationLogs.isArray()).isTrue();
+        assertThat(operationLogs.findValuesAsText("action")).contains("LOGIN", "LOGOUT");
+
+        MvcResult messagesResult = mockMvc.perform(get("/api/messages")
+                        .header("Authorization", bearer(verifyToken)))
+                .andExpect(status().isOk())
+                .andReturn();
+        JsonNode messages = objectMapper.readTree(messagesResult.getResponse().getContentAsString()).path("data");
+        assertThat(messages.isArray()).isTrue();
+        if (messages.size() > 0) {
+            Long messageId = messages.get(0).path("id").asLong();
+            mockMvc.perform(post("/api/messages/" + messageId + "/read")
+                            .header("Authorization", bearer(verifyToken)))
+                    .andExpect(status().isOk());
+        }
+    }
+
+    @Test
+    void shouldSupportLowRiskModulesAfterMyBatisAnnotationMigration() throws Exception {
+        String token = loginAsAdmin();
+        String suffix = String.valueOf(System.currentTimeMillis());
+
+        mockMvc.perform(post("/api/suppliers")
+                        .header("Authorization", bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"注解供应商" + suffix + "\",\"contactName\":\"供应商联系人\",\"contactPhone\":\"13800001111\",\"address\":\"供应商地址\"}"))
+                .andExpect(status().isOk());
+        MvcResult supplierListResult = mockMvc.perform(get("/api/suppliers")
+                        .header("Authorization", bearer(token))
+                        .param("keyword", "注解供应商" + suffix)
+                        .param("status", "ENABLED"))
+                .andExpect(status().isOk())
+                .andReturn();
+        JsonNode suppliers = objectMapper.readTree(supplierListResult.getResponse().getContentAsString()).path("data");
+        assertThat(suppliers.isArray()).isTrue();
+        Long supplierId = suppliers.get(0).path("id").asLong();
+        mockMvc.perform(put("/api/suppliers/" + supplierId)
+                        .header("Authorization", bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"注解供应商更新" + suffix + "\",\"contactName\":\"新联系人\",\"contactPhone\":\"13800002222\",\"address\":\"新地址\"}"))
+                .andExpect(status().isOk());
+        mockMvc.perform(delete("/api/suppliers/" + supplierId)
+                        .header("Authorization", bearer(token)))
+                .andExpect(status().isOk());
+        MvcResult disabledSupplierListResult = mockMvc.perform(get("/api/suppliers")
+                        .header("Authorization", bearer(token))
+                        .param("keyword", "注解供应商更新" + suffix)
+                        .param("status", "DISABLED"))
+                .andExpect(status().isOk())
+                .andReturn();
+        assertThat(objectMapper.readTree(disabledSupplierListResult.getResponse().getContentAsString()).path("data").isArray()).isTrue();
+
+        mockMvc.perform(post("/api/categories")
+                        .header("Authorization", bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"注解品类" + suffix + "\",\"remark\":\"测试品类\"}"))
+                .andExpect(status().isOk());
+        MvcResult categoryListResult = mockMvc.perform(get("/api/categories")
+                        .header("Authorization", bearer(token)))
+                .andExpect(status().isOk())
+                .andReturn();
+        JsonNode categories = objectMapper.readTree(categoryListResult.getResponse().getContentAsString()).path("data");
+        assertThat(categories.findValuesAsText("name")).contains("注解品类" + suffix);
+
+        String productCode = "MB" + suffix;
+        mockMvc.perform(post("/api/products")
+                        .header("Authorization", bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\":\"" + productCode + "\",\"name\":\"注解商品" + suffix + "\",\"category\":\"注解品类" + suffix + "\",\"unit\":\"条\",\"unitPrice\":88.5,\"warningThreshold\":6}"))
+                .andExpect(status().isOk());
+        MvcResult productListResult = mockMvc.perform(get("/api/products")
+                        .header("Authorization", bearer(token))
+                        .param("keyword", productCode)
+                        .param("status", "ENABLED")
+                        .param("category", "注解品类" + suffix))
+                .andExpect(status().isOk())
+                .andReturn();
+        JsonNode products = objectMapper.readTree(productListResult.getResponse().getContentAsString()).path("data");
+        assertThat(products.isArray()).isTrue();
+        Long productId = products.get(0).path("id").asLong();
+        MvcResult productDetailResult = mockMvc.perform(get("/api/products/" + productId)
+                        .header("Authorization", bearer(token)))
+                .andExpect(status().isOk())
+                .andReturn();
+        assertThat(objectMapper.readTree(productDetailResult.getResponse().getContentAsString()).path("data").path("code").asText()).isEqualTo(productCode);
+        mockMvc.perform(delete("/api/products/" + productId)
+                        .header("Authorization", bearer(token)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/customers")
+                        .header("Authorization", bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"迁移客户" + suffix + "\",\"contactName\":\"客户联系人\",\"contactPhone\":\"13900009999\",\"address\":\"测试地址\",\"status\":\"ENABLED\"}"))
+                .andExpect(status().isOk());
+        MvcResult customerListResult = mockMvc.perform(get("/api/customers")
+                        .header("Authorization", bearer(token))
+                        .param("keyword", "迁移客户" + suffix)
+                        .param("status", "ENABLED"))
+                .andExpect(status().isOk())
+                .andReturn();
+        JsonNode customerList = objectMapper.readTree(customerListResult.getResponse().getContentAsString()).path("data");
+        assertThat(customerList.isArray()).isTrue();
+        Long customerId = customerList.get(0).path("id").asLong();
+        MvcResult customerDetailResult = mockMvc.perform(get("/api/customers/" + customerId)
+                        .header("Authorization", bearer(token)))
+                .andExpect(status().isOk())
+                .andReturn();
+        assertThat(objectMapper.readTree(customerDetailResult.getResponse().getContentAsString()).path("data").path("name").asText()).isEqualTo("迁移客户" + suffix);
     }
 
     @Test

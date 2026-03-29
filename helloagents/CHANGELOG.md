@@ -7,6 +7,16 @@
 ## [Unreleased]
 
 ### 新增
+- 引入 MyBatis 注解式数据访问基础设施：新增 `mybatis-spring-boot-starter`、`@MapperScan` 与驼峰映射配置
+- 新增低风险模块 Mapper 试点：`audit`、`message`、`customer`、`supplier`、`catalog`
+- 扩展后端兼容性测试，覆盖登录/登出操作日志、消息已读，以及供应商/商品/客户在 MyBatis 注解迁移后的关键链路
+- 新增 `AuthIntegrationTest` 与 `BulletinIntegrationTest`，覆盖验证码失败、禁用账号、忘记/重置密码、会话失效与公告发布查询
+
+### 变更
+- 完成 `auth`、`interceptor` 与 `bulletin` 剩余 JDBC 访问迁移，并同步收口 `system`、`report`、`dashboard`、`purchase`、`sales`、`inventory` 等模块的 MyBatis 注解数据访问
+- 为 MyBatis 迁移执行方案补充方案包与分阶段任务，明确“先测试、后替换”的执行路径
+
+### 新增
 - 补全 schema.sql 中 13 张缺失表定义（验证码、会话、密码重置、权限、角色权限、系统配置、仓库、用户数据范围、登录日志、操作日志、追溯记录、异常单据、消息）
 - 新增 bulletins 表用于销售信息发布功能
 - 新增 purchase_orders/sales_orders 审核/取消字段（audited_by, audited_at, audit_remark, cancel_reason）

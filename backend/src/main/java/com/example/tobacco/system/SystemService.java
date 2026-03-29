@@ -2,10 +2,9 @@ package com.example.tobacco.system;
 
 import com.example.tobacco.audit.AuditService;
 import com.example.tobacco.auth.AuthService;
+import com.example.tobacco.mapper.system.SystemMapper;
 import com.example.tobacco.model.UserProfile;
 import com.example.tobacco.util.PasswordCodec;
-import org.springframework.jdbc.core.BeanPropertyRowMapper;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,33 +17,25 @@ import java.util.Map;
 @Service
 public class SystemService {
 
-    private final JdbcTemplate jdbcTemplate;
     private final PasswordCodec passwordCodec;
+    private final SystemMapper systemMapper;
     private final AuditService auditService;
     private final AuthService authService;
 
-    public SystemService(JdbcTemplate jdbcTemplate, PasswordCodec passwordCodec, AuditService auditService, AuthService authService) {
-        this.jdbcTemplate = jdbcTemplate;
+    public SystemService(PasswordCodec passwordCodec, AuditService auditService, AuthService authService, SystemMapper systemMapper) {
         this.passwordCodec = passwordCodec;
         this.auditService = auditService;
         this.authService = authService;
+        this.systemMapper = systemMapper;
     }
 
     public List<UserProfile> listUsers() {
-        return jdbcTemplate.query(
-                "select u.id, u.username, u.real_name as realName, u.role_code as roleCode, r.name as roleName, u.status, " +
-                        "DATE_FORMAT(u.created_at, '%Y-%m-%d %H:%i:%s') as createdAt, " +
-                        "(select scope_type from user_data_scopes s where s.user_id=u.id order by s.id desc limit 1) as scopeType, " +
-                        "(select scope_value from user_data_scopes s where s.user_id=u.id order by s.id desc limit 1) as scopeValue " +
-                        "from users u left join roles r on u.role_code = r.code order by u.id",
-                new BeanPropertyRowMapper<UserProfile>(UserProfile.class));
+        return systemMapper.selectUsers();
     }
 
     public Map<String, Object> userDetail(Long id) {
-        Map<String, Object> detail = jdbcTemplate.queryForMap(
-                "select id, username, real_name as realName, role_code as roleCode, status from users where id=?", id);
-        List<Map<String, Object>> scopes = jdbcTemplate.queryForList(
-                "select scope_type as scopeType, scope_value as scopeValue from user_data_scopes where user_id=? order by id", id);
+        Map<String, Object> detail = systemMapper.selectUserDetail(id);
+        List<Map<String, Object>> scopes = systemMapper.selectDataScopes(id);
         detail.put("dataScopes", scopes);
         if (!scopes.isEmpty()) {
             detail.put("scopeType", scopes.get(0).get("scopeType"));
@@ -60,79 +51,72 @@ public class SystemService {
         String realName = required(request.get("realName"), "姓名不能为空");
         String roleCode = required(request.get("roleCode"), "角色不能为空");
         ensureAssignableRole(operatorRoleCode, roleCode);
-        jdbcTemplate.update("insert into users(username,password,real_name,role_code,status) values(?,?,?,?,?)",
-                username,
-                passwordCodec.encode(username, password),
-                realName,
-                roleCode,
-                request.getOrDefault("status", "ENABLED"));
-        Long userId = jdbcTemplate.queryForObject("select id from users where username=?", Long.class, username);
+        systemMapper.insertUser(username, passwordCodec.encode(username, password), realName, roleCode, request.getOrDefault("status", "ENABLED"));
+        Long userId = systemMapper.selectUserIdByUsername(username);
         replaceDataScopes(userId, request.get("scopeType"), request.get("scopeValue"));
         auditService.logOperation(operatorId, operatorName, "SYSTEM", "CREATE_USER", "USER", userId, "创建用户");
     }
 
     @Transactional
     public void updateUser(Long id, Map<String, String> request, Long operatorId, String operatorName, String operatorRoleCode) {
-        Map<String, Object> existing = jdbcTemplate.queryForMap("select username, real_name as realName, role_code as roleCode, status from users where id=?", id);
+        Map<String, Object> existing = systemMapper.selectUserBaseById(id);
         ensureManageUserPermission(operatorRoleCode, String.valueOf(existing.get("roleCode")), "修改管理员账号");
         String targetRoleCode = valueOrDefault(request.get("roleCode"), String.valueOf(existing.get("roleCode")));
         ensureAssignableRole(operatorRoleCode, targetRoleCode);
-        jdbcTemplate.update("update users set real_name=?, role_code=?, status=? where id=?",
+        systemMapper.updateUser(
+                id,
                 valueOrDefault(request.get("realName"), String.valueOf(existing.get("realName"))),
                 targetRoleCode,
-                valueOrDefault(request.get("status"), String.valueOf(existing.get("status"))),
-                id);
+                valueOrDefault(request.get("status"), String.valueOf(existing.get("status"))));
         if (hasText(request.get("password"))) {
             String username = String.valueOf(existing.get("username"));
-            jdbcTemplate.update("update users set password=? where id=?", passwordCodec.encode(username, request.get("password")), id);
+            systemMapper.updateUserPasswordById(id, passwordCodec.encode(username, request.get("password")));
         }
         replaceDataScopes(id, request.get("scopeType"), request.get("scopeValue"));
         auditService.logOperation(operatorId, operatorName, "SYSTEM", "UPDATE_USER", "USER", id, "更新用户");
     }
 
     public void updateUserStatus(Long id, String status, Long operatorId, String operatorName, String operatorRoleCode) {
-        String targetRoleCode = jdbcTemplate.queryForObject("select role_code from users where id=?", String.class, id);
+        String targetRoleCode = systemMapper.selectUserRoleCodeById(id);
         ensureManageUserPermission(operatorRoleCode, targetRoleCode, "变更管理员账号状态");
         String targetStatus = hasText(status) ? status.trim() : "ENABLED";
-        jdbcTemplate.update("update users set status=? where id=?", targetStatus, id);
+        systemMapper.updateUserStatus(id, targetStatus);
         auditService.logOperation(operatorId, operatorName, "SYSTEM", "UPDATE_USER_STATUS", "USER", id, "更新用户状态为" + targetStatus);
     }
 
     @Transactional
     public void deleteUser(Long id, Long operatorId, String operatorName, String operatorRoleCode) {
-        Map<String, Object> user = jdbcTemplate.queryForMap("select username, role_code as roleCode from users where id=?", id);
+        Map<String, Object> user = systemMapper.selectUserBaseById(id);
         ensureManageUserPermission(operatorRoleCode, String.valueOf(user.get("roleCode")), "删除管理员账号");
         String username = String.valueOf(user.get("username"));
-        jdbcTemplate.update("delete from user_data_scopes where user_id=?", id);
-        jdbcTemplate.update("delete from user_sessions where user_id=?", id);
-        jdbcTemplate.update("delete from users where id=?", id);
+        systemMapper.deleteUserDataScopes(id);
+        systemMapper.deleteUserSessions(id);
+        systemMapper.deleteUser(id);
         auditService.logOperation(operatorId, operatorName, "SYSTEM", "DELETE_USER", "USER", id, "删除用户" + username);
     }
 
     public List<Map<String, Object>> listRoles() {
-        List<Map<String, Object>> roles = jdbcTemplate.queryForList("select id, code, name, remark from roles order by id");
+        List<Map<String, Object>> roles = systemMapper.selectRoles();
         for (Map<String, Object> role : roles) {
             String code = String.valueOf(role.get("code"));
             role.put("status", "ENABLED");
-            role.put("permissions", jdbcTemplate.queryForList(
-                    "select permission_code from role_permissions where role_code=? order by permission_code", String.class, code));
+            role.put("permissions", systemMapper.selectRolePermissions(code));
         }
         return roles;
     }
 
     public void createRole(Map<String, String> request, Long operatorId, String operatorName) {
-        jdbcTemplate.update("insert into roles(code,name,remark) values(?,?,?)",
-                request.get("code"), request.get("name"), request.get("remark"));
+        systemMapper.insertRole(request.get("code"), request.get("name"), request.get("remark"));
         auditService.logOperation(operatorId, operatorName, "SYSTEM", "CREATE_ROLE", "ROLE", null, "创建角色" + request.get("code"));
     }
 
     @Transactional
     public void updateRole(String code, Map<String, Object> request, Long operatorId, String operatorName) {
-        Map<String, Object> role = jdbcTemplate.queryForMap("select name, remark from roles where code=?", code);
+        Map<String, Object> role = systemMapper.selectRoleByCode(code);
         String name = request.get("name") == null ? String.valueOf(role.get("name")) : String.valueOf(request.get("name"));
         String remark = request.get("remark") == null ? stringValue(role.get("remark")) : stringValue(request.get("remark"));
-        jdbcTemplate.update("update roles set name=?, remark=? where code=?", name, remark, code);
-        jdbcTemplate.update("delete from role_permissions where role_code=?", code);
+        systemMapper.updateRole(code, name, remark);
+        systemMapper.deleteRolePermissions(code);
         Object permissions = request.get("permissions");
         if (permissions instanceof List) {
             List permissionList = (List) permissions;
@@ -144,75 +128,58 @@ public class SystemService {
                 if (!permissionCode.contains(":")) {
                     continue;
                 }
-                jdbcTemplate.update("insert into role_permissions(role_code, permission_code) values(?,?)", code, permissionCode);
+                systemMapper.insertRolePermission(code, permissionCode);
             }
         }
         auditService.logOperation(operatorId, operatorName, "SYSTEM", "UPDATE_ROLE", "ROLE", null, "更新角色" + code);
     }
 
     public List<Map<String, Object>> listPermissions() {
-        return jdbcTemplate.queryForList("select id, code, name, module, remark from permissions order by id");
+        return systemMapper.selectPermissions();
     }
 
     public void createPermission(Map<String, String> request, Long operatorId, String operatorName) {
-        jdbcTemplate.update("insert into permissions(code,name,module,remark) values(?,?,?,?)",
-                request.get("code"), request.get("name"), request.get("module"), request.get("remark"));
+        systemMapper.insertPermission(request.get("code"), request.get("name"), request.get("module"), request.get("remark"));
         auditService.logOperation(operatorId, operatorName, "SYSTEM", "CREATE_PERMISSION", "PERMISSION", null, request.get("code"));
     }
 
     public List<Map<String, Object>> listConfigs() {
-        return jdbcTemplate.queryForList("select id, config_key as configKey, config_value as configValue, remark, DATE_FORMAT(updated_at,'%Y-%m-%d %H:%i:%s') as updatedAt from system_configs order by id");
+        return systemMapper.selectConfigs();
     }
 
     public void updateConfig(String key, Map<String, String> request, Long operatorId, String operatorName) {
-        int updated = jdbcTemplate.update("update system_configs set config_value=?, remark=?, updated_at=now() where config_key=?",
-                request.get("configValue"), request.get("remark"), key);
+        int updated = systemMapper.updateConfig(key, request.get("configValue"), request.get("remark"));
         if (updated == 0) {
-            jdbcTemplate.update("insert into system_configs(config_key, config_value, remark) values(?,?,?)",
-                    key, request.get("configValue"), request.get("remark"));
+            systemMapper.insertConfig(key, request.get("configValue"), request.get("remark"));
         }
         auditService.logOperation(operatorId, operatorName, "SYSTEM", "UPDATE_CONFIG", "CONFIG", null, key);
     }
 
     public Map<String, Object> profile(String username) {
-        Map<String, Object> profile = jdbcTemplate.queryForMap("select id, username, real_name as realName, role_code as roleCode, status from users where username=?", username);
+        Map<String, Object> profile = systemMapper.selectProfileByUsername(username);
         profile.put("permissions", authService.permissions(String.valueOf(profile.get("roleCode"))));
         profile.put("menus", authService.menus(String.valueOf(profile.get("roleCode"))));
-        profile.put("dataScopes", jdbcTemplate.queryForList("select scope_type as scopeType, scope_value as scopeValue from user_data_scopes where user_id=?", ((Number) profile.get("id")).longValue()));
+        profile.put("dataScopes", systemMapper.selectDataScopes(((Number) profile.get("id")).longValue()));
         return profile;
     }
 
     public void updateProfile(String username, Map<String, String> request, Long operatorId) {
-        jdbcTemplate.update("update users set real_name=? where username=?",
-                request.get("realName"), username);
+        systemMapper.updateUserRealName(username, request.get("realName"));
         auditService.logOperation(operatorId, username, "SYSTEM", "UPDATE_PROFILE", "USER", operatorId, "更新个人中心");
     }
 
     public void changePassword(String username, String oldPassword, String newPassword, Long operatorId) {
-        String encodedPassword = jdbcTemplate.queryForObject("select password from users where username=?", String.class, username);
+        String encodedPassword = systemMapper.selectPasswordByUsername(username);
         if (!passwordCodec.matches(username, oldPassword, encodedPassword)) {
             throw new IllegalArgumentException("原密码错误");
         }
-        jdbcTemplate.update("update users set password=? where username=?", passwordCodec.encode(username, newPassword), username);
+        systemMapper.updateUserPassword(username, passwordCodec.encode(username, newPassword));
         auditService.logOperation(operatorId, username, "SYSTEM", "CHANGE_PASSWORD", "USER", operatorId, "修改个人密码");
     }
 
     public List<Map<String, Object>> warehouses(String keyword, String status) {
-        String codeSelect = warehouseHasCodeColumn() ? "code, " : "";
-        StringBuilder sql = new StringBuilder("select id, " + codeSelect + "name, address, status from warehouses where 1=1");
-        List<Object> params = new ArrayList<Object>();
-        if (hasText(keyword)) {
-            sql.append(" and (name like ? or address like ?)");
-            String keywordValue = "%" + keyword.trim() + "%";
-            params.add(keywordValue);
-            params.add(keywordValue);
-        }
-        if (hasText(status)) {
-            sql.append(" and status=?");
-            params.add(status.trim());
-        }
-        sql.append(" order by id");
-        List<Map<String, Object>> warehouses = jdbcTemplate.queryForList(sql.toString(), params.toArray());
+        boolean hasCode = warehouseHasCodeColumn();
+        List<Map<String, Object>> warehouses = systemMapper.selectWarehouses(hasCode, trim(keyword), likeValue(keyword), trim(status));
         for (Map<String, Object> warehouse : warehouses) {
             if (warehouse.get("code") == null) {
                 warehouse.put("code", warehouse.get("id"));
@@ -222,8 +189,7 @@ public class SystemService {
     }
 
     public Map<String, Object> warehouseDetail(Long id) {
-        String codeSelect = warehouseHasCodeColumn() ? "code, " : "";
-        Map<String, Object> detail = jdbcTemplate.queryForMap("select id, " + codeSelect + "name, address, status from warehouses where id=?", id);
+        Map<String, Object> detail = systemMapper.selectWarehouseDetail(id, warehouseHasCodeColumn());
         if (detail.get("code") == null) {
             detail.put("code", detail.get("id"));
         }
@@ -235,35 +201,31 @@ public class SystemService {
         String status = valueOrDefault(request.get("status"), "ENABLED");
         String address = normalizeText(request.get("address"));
         if (warehouseHasCodeColumn()) {
-            jdbcTemplate.update("insert into warehouses(code,name,address,status) values(?,?,?,?)",
-                    generateWarehouseCode(), name, address, status);
+            systemMapper.insertWarehouseWithCode(generateWarehouseCode(), name, address, status);
         } else {
-            jdbcTemplate.update("insert into warehouses(name,address,status) values(?,?,?)",
-                    name, address, status);
+            systemMapper.insertWarehouseWithoutCode(name, address, status);
         }
         auditService.logOperation(operatorId, operatorName, "SYSTEM", "CREATE_WAREHOUSE", "WAREHOUSE", null, name);
     }
 
     public void updateWarehouse(Long id, Map<String, String> request, Long operatorId, String operatorName) {
         Map<String, Object> existing = warehouseDetail(id);
-        jdbcTemplate.update("update warehouses set name=?, address=?, status=? where id=?",
+        systemMapper.updateWarehouse(
+                id,
                 normalizeText(valueOrDefault(request.get("name"), String.valueOf(existing.get("name")))),
                 normalizeText(valueOrDefault(request.get("address"), stringValue(existing.get("address")))),
-                valueOrDefault(request.get("status"), String.valueOf(existing.get("status"))),
-                id);
+                valueOrDefault(request.get("status"), String.valueOf(existing.get("status"))));
         auditService.logOperation(operatorId, operatorName, "SYSTEM", "UPDATE_WAREHOUSE", "WAREHOUSE", id, "更新仓库" + id);
     }
 
     public void updateWarehouseStatus(Long id, String status, Long operatorId, String operatorName) {
         String targetStatus = hasText(status) ? status.trim() : "ENABLED";
-        jdbcTemplate.update("update warehouses set status=? where id=?", targetStatus, id);
+        systemMapper.updateWarehouseStatus(id, targetStatus);
         auditService.logOperation(operatorId, operatorName, "SYSTEM", "UPDATE_WAREHOUSE_STATUS", "WAREHOUSE", id, "更新仓库状态为" + targetStatus);
     }
 
     private boolean warehouseHasCodeColumn() {
-        Integer count = jdbcTemplate.queryForObject(
-                "select count(*) from information_schema.columns where table_schema = database() and table_name = 'warehouses' and column_name = 'code'",
-                Integer.class);
+        Integer count = systemMapper.countWarehouseCodeColumn();
         return count != null && count > 0;
     }
 
@@ -288,10 +250,9 @@ public class SystemService {
     }
 
     private void replaceDataScopes(Long userId, String scopeType, String scopeValue) {
-        jdbcTemplate.update("delete from user_data_scopes where user_id=?", userId);
+        systemMapper.deleteUserDataScopes(userId);
         if (hasText(scopeType)) {
-            jdbcTemplate.update("insert into user_data_scopes(user_id, scope_type, scope_value) values(?,?,?)",
-                    userId, scopeType.trim(), hasText(scopeValue) ? scopeValue.trim() : "ALL");
+            systemMapper.insertUserDataScope(userId, scopeType.trim(), hasText(scopeValue) ? scopeValue.trim() : "ALL");
         }
     }
 
@@ -304,6 +265,14 @@ public class SystemService {
             throw new IllegalArgumentException(message);
         }
         return value.trim();
+    }
+
+    private String trim(String value) {
+        return hasText(value) ? value.trim() : null;
+    }
+
+    private String likeValue(String value) {
+        return hasText(value) ? "%" + value.trim() + "%" : null;
     }
 
     private String valueOrDefault(String value, String defaultValue) {

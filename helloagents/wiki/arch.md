@@ -12,12 +12,12 @@ flowchart TD
 ```
 
 ## 技术栈
-- **后端:** Java 8 / Spring Boot 2.7 / Spring JDBC / Apache Shiro / Apache POI
+- **后端:** Java 8 / Spring Boot 2.7 / MyBatis（注解 SQL + Provider） / Apache Shiro / Apache POI
 - **前端:** Vue 3 / Vite / Vue Router / Pinia / Axios / Element Plus / ECharts / TypeScript
 - **数据:** MySQL 8
 
 ## 模块划分
-- `auth`：登录、验证码、忘记/重置密码、会话令牌、菜单与权限返回
+- `auth`：登录、验证码、忘记/重置密码、会话令牌、菜单与权限返回（兼容历史字段命名，Bearer 会话校验由 `AuthInterceptor` 落地）
 - `system`：用户、角色、权限、系统配置、个人中心、仓库管理
 - `audit`：登录日志、操作日志、追溯与异常记录
 - `message`：站内消息、预警通知已读管理
@@ -42,7 +42,7 @@ sequenceDiagram
     participant DB as MySQL
     U->>F: 登录/业务操作
     F->>B: 携带 Bearer Token 请求 API
-    B->>DB: 校验会话、权限与业务数据
+    B->>DB: 通过 AuthInterceptor 校验会话、权限与业务数据
     B->>DB: 写入日志/追溯/消息/单据状态
     DB-->>B: 返回结果
     B-->>F: 返回 JSON / Excel
@@ -57,3 +57,4 @@ sequenceDiagram
 | ADR-006 | 业务扩展采用增量表结构扩展 + 分阶段迁移 | 2026-03-24 | ✅已采纳 | purchase, sales, inventory, report | [../history/2026-03/202603240318_taskbook-backend-alignment/how.md](../history/2026-03/202603240318_taskbook-backend-alignment/how.md) |
 | ADR-007 | Excel 批处理统一采用 Apache POI | 2026-03-24 | ✅已采纳 | purchase, sales, inventory, report | [../history/2026-03/202603240318_taskbook-backend-alignment/how.md](../history/2026-03/202603240318_taskbook-backend-alignment/how.md) |
 | ADR-008 | 前端升级为工作台风格并启用 TypeScript 能力 | 2026-03-24 | ✅已采纳 | frontend | [../history/2026-03/202603240320_frontend-second-optimization](../history/2026-03/202603240320_frontend-second-optimization/) |
+| ADR-20260329 | 数据访问层采用测试先行的 MyBatis 注解渐进迁移 | 2026-03-29 | ✅已采纳 | auth, audit, message, catalog, customer, supplier, purchase, sales, inventory, system, report, dashboard | [../history/2026-03/202603290208_mybatis-annotation-migration/how.md](../history/2026-03/202603290208_mybatis-annotation-migration/how.md) |

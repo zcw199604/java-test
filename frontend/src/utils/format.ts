@@ -30,7 +30,9 @@ export const statusTypeMap: Record<string, string> = {
   OUTBOUND: 'warning',
   PARTIAL_PAID: 'warning',
   SALES_OUTBOUND: 'danger',
-  PURCHASE_INBOUND: 'success'
+  PURCHASE_INBOUND: 'success',
+  TRANSFER_IN: 'success',
+  TRANSFER_OUT: 'warning'
 }
 
 export const statusLabelMap: Record<string, string> = {
@@ -51,5 +53,7 @@ export const statusLabelMap: Record<string, string> = {
   OUTBOUND: '已出库',
   PARTIAL_PAID: '部分回款',
   SALES_OUTBOUND: '销售出库',
-  PURCHASE_INBOUND: '采购入库'
+  PURCHASE_INBOUND: '采购入库',
+  TRANSFER_IN: '调拨入库',
+  TRANSFER_OUT: '调拨出库'
 }

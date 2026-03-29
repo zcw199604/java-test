@@ -39,3 +39,9 @@
 3. 销售公告发布 → 建销售单 → 审核 → 出库 → 回款 → 写 `payment_records`、`receivable_records`、`trace_records`
 4. 库存调拨 / 盘点 → 写 `inventory_records`、`inventory_check_reports`、`warning_records`
 5. 异常审核 / 合规追溯 → 聚合 `trace_records` 与 `abnormal_documents`
+
+
+## 本次更新（2026-03-29）
+- `inventories` 已从单仓模型升级为多仓模型，新增 `warehouse_id` 并使用组合唯一键 `product_id + warehouse_id`。
+- `inventory_records` 新增 `warehouse_id / warehouse_name / from_warehouse_id / to_warehouse_id` 等字段，用于记录入库、出库、调拨、盘点的仓库轨迹。
+- `purchase_orders` 与 `sales_orders` 均新增 `warehouse_id / warehouse_name`，用于保留订单实际入库仓/出库仓。

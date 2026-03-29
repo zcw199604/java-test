@@ -1,1 +1,0 @@
-import{h as s}from"./index-DImp0TQX.js";const r=(p={})=>s.get("/suppliers",{params:p}),u=p=>s.post("/suppliers",p),i=(p,e)=>s.put(`/suppliers/${p}`,e),l=p=>s.delete(`/suppliers/${p}`);export{u as c,l as d,r as f,i as u};

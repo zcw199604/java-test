@@ -31,3 +31,10 @@
 - 用户创建与编辑接口现校验操作者角色：仅 `SUPER_ADMIN` 可分配 `SUPER_ADMIN` / `ADMIN`，避免普通管理员扩散管理员权限。
 - 管理员类账号保护已扩展到更新、状态变更与删除接口：非 `SUPER_ADMIN` 无法修改、停用或删除 `SUPER_ADMIN` / `ADMIN` 用户。
 - InventoryService 现已在调拨与盘点后复用库存预警通知逻辑，库存降至或低于阈值时同样向库管发送 ALERT 消息。
+
+
+## 本次更新（2026-03-29）
+- 后端集成测试已补充仓库维度库存回归场景，覆盖选仓入库/出库、双仓调拨、按仓盘点和缺少仓库参数的失败分支。
+- 库存、采购、销售服务已统一切换为仓库维度库存模型：`inventories` 以 `product_id + warehouse_id` 作为唯一库存单元。
+- `POST /api/purchases/{id}/inbound` 与 `POST /api/sales/{id}/outbound` 现要求请求体携带 `warehouseId`，并回写订单仓库字段与库存流水仓库字段。
+- `POST /api/inventory-transfers` 现支持 A 仓到 B 仓双仓调拨；`GET /api/inventories`、`GET /api/inventory-records`、`GET /api/inventory-warnings` 已支持按仓库筛选。

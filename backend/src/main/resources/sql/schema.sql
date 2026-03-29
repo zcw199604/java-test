@@ -61,6 +61,8 @@ CREATE TABLE IF NOT EXISTS purchase_orders (
     total_amount DECIMAL(12,2) NOT NULL,
     status VARCHAR(16) NOT NULL,
     created_by VARCHAR(64),
+    warehouse_id BIGINT NULL,
+    warehouse_name VARCHAR(128) NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     received_at DATETIME NULL,
     inbound_at DATETIME NULL
@@ -84,11 +86,13 @@ DEALLOCATE PREPARE purchase_received_at_stmt;
 
 CREATE TABLE IF NOT EXISTS inventories (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    product_id BIGINT NOT NULL UNIQUE,
+    product_id BIGINT NOT NULL,
+    warehouse_id BIGINT NOT NULL,
     warehouse_name VARCHAR(128) NOT NULL,
     quantity INT NOT NULL DEFAULT 0,
     warning_threshold INT NOT NULL DEFAULT 0,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_inventories_product_warehouse (product_id, warehouse_id)
 );
 
 CREATE TABLE IF NOT EXISTS inventory_records (
@@ -96,6 +100,12 @@ CREATE TABLE IF NOT EXISTS inventory_records (
     product_id BIGINT NOT NULL,
     biz_type VARCHAR(32) NOT NULL,
     biz_id BIGINT NULL,
+    warehouse_id BIGINT NULL,
+    warehouse_name VARCHAR(128) NULL,
+    from_warehouse_id BIGINT NULL,
+    from_warehouse_name VARCHAR(128) NULL,
+    to_warehouse_id BIGINT NULL,
+    to_warehouse_name VARCHAR(128) NULL,
     change_qty INT NOT NULL,
     before_qty INT NOT NULL,
     after_qty INT NOT NULL,
@@ -131,6 +141,8 @@ CREATE TABLE IF NOT EXISTS sales_orders (
     paid_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
     status VARCHAR(16) NOT NULL,
     created_by VARCHAR(64),
+    warehouse_id BIGINT NULL,
+    warehouse_name VARCHAR(128) NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     outbound_at DATETIME NULL
 );
@@ -322,3 +334,99 @@ SET @so_audited_by_ddl = IF(@so_audited_by_exists = 0,
 PREPARE so_audited_by_stmt FROM @so_audited_by_ddl;
 EXECUTE so_audited_by_stmt;
 DEALLOCATE PREPARE so_audited_by_stmt;
+
+
+-- inventories 仓库维度字段与唯一约束
+SET @inventories_warehouse_id_exists = (
+    SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'inventories' AND COLUMN_NAME = 'warehouse_id'
+);
+SET @inventories_warehouse_id_ddl = IF(@inventories_warehouse_id_exists = 0,
+    'ALTER TABLE inventories ADD COLUMN warehouse_id BIGINT NULL AFTER product_id',
+    'SELECT 1');
+PREPARE inventories_warehouse_id_stmt FROM @inventories_warehouse_id_ddl;
+EXECUTE inventories_warehouse_id_stmt;
+DEALLOCATE PREPARE inventories_warehouse_id_stmt;
+
+SET @inventories_legacy_unique_exists = (
+    SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'inventories' AND INDEX_NAME = 'product_id'
+);
+SET @inventories_legacy_unique_ddl = IF(@inventories_legacy_unique_exists > 0,
+    'ALTER TABLE inventories DROP INDEX product_id',
+    'SELECT 1');
+PREPARE inventories_legacy_unique_stmt FROM @inventories_legacy_unique_ddl;
+EXECUTE inventories_legacy_unique_stmt;
+DEALLOCATE PREPARE inventories_legacy_unique_stmt;
+
+SET @inventories_composite_unique_exists = (
+    SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'inventories' AND INDEX_NAME = 'uk_inventories_product_warehouse'
+);
+SET @inventories_composite_unique_ddl = IF(@inventories_composite_unique_exists = 0,
+    'ALTER TABLE inventories ADD UNIQUE INDEX uk_inventories_product_warehouse (product_id, warehouse_id)',
+    'SELECT 1');
+PREPARE inventories_composite_unique_stmt FROM @inventories_composite_unique_ddl;
+EXECUTE inventories_composite_unique_stmt;
+DEALLOCATE PREPARE inventories_composite_unique_stmt;
+
+-- inventory_records 仓库维度字段
+SET @inventory_records_warehouse_id_exists = (
+    SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'inventory_records' AND COLUMN_NAME = 'warehouse_id'
+);
+SET @inventory_records_warehouse_id_ddl = IF(@inventory_records_warehouse_id_exists = 0,
+    'ALTER TABLE inventory_records ADD COLUMN warehouse_id BIGINT NULL AFTER biz_id, ADD COLUMN warehouse_name VARCHAR(128) NULL AFTER warehouse_id, ADD COLUMN from_warehouse_id BIGINT NULL AFTER warehouse_name, ADD COLUMN from_warehouse_name VARCHAR(128) NULL AFTER from_warehouse_id, ADD COLUMN to_warehouse_id BIGINT NULL AFTER from_warehouse_name, ADD COLUMN to_warehouse_name VARCHAR(128) NULL AFTER to_warehouse_id',
+    'SELECT 1');
+PREPARE inventory_records_warehouse_stmt FROM @inventory_records_warehouse_id_ddl;
+EXECUTE inventory_records_warehouse_stmt;
+DEALLOCATE PREPARE inventory_records_warehouse_stmt;
+
+-- purchase_orders 仓库字段
+SET @purchase_orders_warehouse_id_exists = (
+    SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'purchase_orders' AND COLUMN_NAME = 'warehouse_id'
+);
+SET @purchase_orders_warehouse_id_ddl = IF(@purchase_orders_warehouse_id_exists = 0,
+    'ALTER TABLE purchase_orders ADD COLUMN warehouse_id BIGINT NULL AFTER created_by, ADD COLUMN warehouse_name VARCHAR(128) NULL AFTER warehouse_id',
+    'SELECT 1');
+PREPARE purchase_orders_warehouse_stmt FROM @purchase_orders_warehouse_id_ddl;
+EXECUTE purchase_orders_warehouse_stmt;
+DEALLOCATE PREPARE purchase_orders_warehouse_stmt;
+
+-- sales_orders 仓库字段
+SET @sales_orders_warehouse_id_exists = (
+    SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sales_orders' AND COLUMN_NAME = 'warehouse_id'
+);
+SET @sales_orders_warehouse_id_ddl = IF(@sales_orders_warehouse_id_exists = 0,
+    'ALTER TABLE sales_orders ADD COLUMN warehouse_id BIGINT NULL AFTER created_by, ADD COLUMN warehouse_name VARCHAR(128) NULL AFTER warehouse_id',
+    'SELECT 1');
+PREPARE sales_orders_warehouse_stmt FROM @sales_orders_warehouse_id_ddl;
+EXECUTE sales_orders_warehouse_stmt;
+DEALLOCATE PREPARE sales_orders_warehouse_stmt;
+
+-- 回填默认仓库
+INSERT INTO warehouses (name, address, status)
+SELECT '中心仓', '武汉市中心仓', 'ENABLED' FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM warehouses WHERE name = '中心仓');
+
+UPDATE inventories
+SET warehouse_id = (SELECT id FROM warehouses WHERE name = '中心仓' LIMIT 1),
+    warehouse_name = IFNULL(NULLIF(warehouse_name, ''), '中心仓')
+WHERE warehouse_id IS NULL;
+
+UPDATE inventory_records
+SET warehouse_id = (SELECT id FROM warehouses WHERE name = '中心仓' LIMIT 1),
+    warehouse_name = IFNULL(NULLIF(warehouse_name, ''), '中心仓')
+WHERE warehouse_id IS NULL AND biz_type IN ('INITIAL', 'PURCHASE_INBOUND', 'SALES_OUTBOUND', 'CHECK');
+
+UPDATE purchase_orders
+SET warehouse_id = (SELECT id FROM warehouses WHERE name = '中心仓' LIMIT 1),
+    warehouse_name = '中心仓'
+WHERE status = 'INBOUND' AND warehouse_id IS NULL;
+
+UPDATE sales_orders
+SET warehouse_id = (SELECT id FROM warehouses WHERE name = '中心仓' LIMIT 1),
+    warehouse_name = '中心仓'
+WHERE status IN ('OUTBOUND', 'PARTIAL_PAID', 'PAID') AND warehouse_id IS NULL;

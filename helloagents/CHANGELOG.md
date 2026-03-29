@@ -7,12 +7,14 @@
 ## [Unreleased]
 
 ### 新增
+- 新增仓库维度库存改造：`inventories` 升级为 `product_id + warehouse_id` 组合唯一，`inventory_records`、`purchase_orders`、`sales_orders` 同步扩展仓库字段
 - 引入 MyBatis 注解式数据访问基础设施：新增 `mybatis-spring-boot-starter`、`@MapperScan` 与驼峰映射配置
 - 新增低风险模块 Mapper 试点：`audit`、`message`、`customer`、`supplier`、`catalog`
 - 扩展后端兼容性测试，覆盖登录/登出操作日志、消息已读，以及供应商/商品/客户在 MyBatis 注解迁移后的关键链路
 - 新增 `AuthIntegrationTest` 与 `BulletinIntegrationTest`，覆盖验证码失败、禁用账号、忘记/重置密码、会话失效与公告发布查询
 
 ### 变更
+- 采购入库、销售出库、库存调拨、库存盘点现均按指定仓库执行，库存总览/流水/台账/盘点页支持“全部仓库 + 仓库筛选”
 - 完成 `auth`、`interceptor` 与 `bulletin` 剩余 JDBC 访问迁移，并同步收口 `system`、`report`、`dashboard`、`purchase`、`sales`、`inventory` 等模块的 MyBatis 注解数据访问
 - 为 MyBatis 迁移执行方案补充方案包与分阶段任务，明确“先测试、后替换”的执行路径
 
@@ -38,6 +40,8 @@
 - 管理员账号保护已补齐：普通管理员不能修改、停用或删除 SUPER_ADMIN / ADMIN 账号
 
 ### 修复
+- 补充仓库维度库存回归测试：覆盖采购入库选仓、销售出库选仓、双仓调拨、按仓盘点以及缺少 `warehouseId` 的失败分支，并跑通 `mvn test`
+- 完成 `npm run type-check`、`npm run build`、`mvn -q -DskipTests compile`，并基于 `temp-mysql` 对采购入库、销售出库、库存调拨、库存盘点链路进行接口冒烟验证
 - 修复商品管理与供应商管理页面缺少动态路由和 SPA 刷新回退的问题，`/catalog/products` 与 `/supplier/list` 现可直接访问
 - 修复商品/供应商列表仅能全量查询的问题，后端接口现支持按关键字、状态（商品额外支持品类）过滤
 - 修复账号管理后端接口与数据库结构不一致的问题，用户列表详情、新增、编辑与启停用现已可用

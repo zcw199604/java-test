@@ -47,8 +47,10 @@ public class SalesController {
     }
 
     @PostMapping("/{id}/outbound")
-    public ApiResponse<SalesOrderItem> outbound(@PathVariable Long id, HttpServletRequest request) {
-        return ApiResponse.success(salesService.outbound(id, String.valueOf(request.getAttribute("username")), String.valueOf(request.getAttribute("roleCode"))));
+    public ApiResponse<SalesOrderItem> outbound(@PathVariable Long id,
+                                                @Validated @RequestBody WarehouseActionRequest request,
+                                                HttpServletRequest httpRequest) {
+        return ApiResponse.success(salesService.outbound(id, request, String.valueOf(httpRequest.getAttribute("username")), String.valueOf(httpRequest.getAttribute("roleCode"))));
     }
 
     @PostMapping("/{id}/payment")

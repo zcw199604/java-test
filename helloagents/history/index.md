@@ -29,6 +29,7 @@
 | 202603290600 | frontend-order-action-permission-align | 修复 | ✅已完成 | [helloagents/history/2026-03/202603290600_frontend-order-action-permission-align](2026-03/202603290600_frontend-order-action-permission-align/) |
 | 202603290635 | order-approve-permission-fix | 修复 | ✅已完成 | [helloagents/history/2026-03/202603290635_order-approve-permission-fix](2026-03/202603290635_order-approve-permission-fix/) |
 | 202603290650 | frontend-role-log-zh-display | 修复 | ✅已完成 | [helloagents/history/2026-03/202603290650_frontend-role-log-zh-display](2026-03/202603290650_frontend-role-log-zh-display/) |
+| 202603290652 | warehouse-granularity-inventory | 功能 | ✅已完成 | [helloagents/history/2026-03/202603290652_warehouse-granularity-inventory](2026-03/202603290652_warehouse-granularity-inventory/) |
 
 ---
 
@@ -58,3 +59,4 @@
 - [202603290600_frontend-order-action-permission-align](2026-03/202603290600_frontend-order-action-permission-align/) - 按后端规则收紧订单审批与出入库按钮显示权限
 - [202603290635_order-approve-permission-fix](2026-03/202603290635_order-approve-permission-fix/) - 新增独立审批权限，修复采购员/销售员仍显示审批按钮的问题
 - [202603290650_frontend-role-log-zh-display](2026-03/202603290650_frontend-role-log-zh-display/) - 将角色权限与日志编码展示统一改为前端中文翻译
+- [202603290652_warehouse-granularity-inventory](2026-03/202603290652_warehouse-granularity-inventory/) - 完成仓库维度库存改造、订单仓库字段扩展与多仓调拨/筛选闭环

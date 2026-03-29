@@ -5,6 +5,7 @@ import com.example.tobacco.mapper.purchase.PurchaseMapper;
 import com.example.tobacco.message.MessageService;
 import com.example.tobacco.model.CreatePurchaseRequest;
 import com.example.tobacco.model.PurchaseOrderItem;
+import com.example.tobacco.model.WarehouseActionRequest;
 import com.example.tobacco.util.ExcelUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -127,7 +128,7 @@ public class PurchaseService {
     }
 
     @Transactional
-    public PurchaseOrderItem inbound(Long id, String operatorName, String roleCode) {
+    public PurchaseOrderItem inbound(Long id, WarehouseActionRequest request, String operatorName, String roleCode) {
         requireApprovalRole(roleCode, "采购入库确认");
         PurchaseOrderItem item = loadDetail(id);
         if ("INBOUND".equals(item.getStatus())) {
@@ -136,22 +137,33 @@ public class PurchaseService {
         if (!"RECEIVED".equals(item.getStatus())) {
             throw new IllegalArgumentException("采购单需先登记到货后才能入库");
         }
-        Integer beforeQty = purchaseMapper.selectInventoryQuantity(item.getProductId());
+        Long warehouseId = request.getWarehouseId();
+        if (warehouseId == null) {
+            throw new IllegalArgumentException("采购入库必须选择仓库");
+        }
+        String warehouseName = requireWarehouseName(warehouseId);
+        Integer beforeQty = purchaseMapper.selectInventoryQuantity(item.getProductId(), warehouseId);
         if (beforeQty == null) {
             beforeQty = 0;
         }
         int afterQty = beforeQty + item.getQuantity();
-        Integer count = purchaseMapper.countInventories(item.getProductId());
+        Integer count = purchaseMapper.countInventories(item.getProductId(), warehouseId);
         if (count != null && count > 0) {
-            purchaseMapper.updateInventoryForInbound(item.getProductId(), afterQty);
+            purchaseMapper.updateInventoryForInbound(item.getProductId(), warehouseId, warehouseName, afterQty);
         } else {
-            purchaseMapper.insertInventoryForInbound(item.getProductId(), "中心仓", afterQty);
+            purchaseMapper.insertInventoryForInbound(item.getProductId(), warehouseId, warehouseName, afterQty);
         }
-        purchaseMapper.inboundOrder(id);
-        purchaseMapper.insertInventoryRecord(item.getProductId(), "PURCHASE_INBOUND", id, item.getQuantity(), beforeQty, afterQty, operatorName, "采购单入库");
-        auditService.trace("PURCHASE", id, item.getOrderNo(), "INBOUND", "采购入库", operatorName, "入库数量: " + item.getQuantity());
-        auditService.logOperation(findUserIdByUsername(operatorName), operatorName, "PURCHASE", "INBOUND", "PURCHASE", id, "采购入库，数量:" + item.getQuantity());
-        checkAndNotifyWarning(item.getProductId(), afterQty);
+        purchaseMapper.inboundOrder(id, warehouseId, warehouseName);
+        String remark = request.getRemark();
+        if (remark == null || remark.trim().isEmpty()) {
+            remark = "采购单入库";
+        }
+        purchaseMapper.insertInventoryRecord(item.getProductId(), "PURCHASE_INBOUND", id, item.getQuantity(), beforeQty, afterQty,
+                warehouseId, warehouseName, null, null, null, null, operatorName, remark);
+        auditService.trace("PURCHASE", id, item.getOrderNo(), "INBOUND", "采购入库", operatorName, "入库数量: " + item.getQuantity() + "，仓库: " + warehouseName);
+        auditService.logOperation(findUserIdByUsername(operatorName), operatorName, "PURCHASE", "INBOUND", "PURCHASE", id,
+                "采购入库，数量:" + item.getQuantity() + "，仓库:" + warehouseName);
+        checkAndNotifyWarning(item.getProductId(), warehouseName, afterQty);
         return loadDetail(id);
     }
 
@@ -195,12 +207,12 @@ public class PurchaseService {
         return result;
     }
 
-    private void checkAndNotifyWarning(Long productId, int currentQty) {
+    private void checkAndNotifyWarning(Long productId, String warehouseName, int currentQty) {
         try {
             Integer threshold = purchaseMapper.selectInventoryWarningThreshold(productId);
             if (threshold != null && currentQty <= threshold) {
                 String productName = purchaseMapper.selectProductName(productId);
-                String title = "库存预警: " + productName + " 当前库存" + currentQty + "，低于阈值" + threshold;
+                String title = "库存预警: " + productName + " 在" + warehouseName + "当前库存" + currentQty + "，低于阈值" + threshold;
                 List<Long> keeperIds = purchaseMapper.selectKeeperIds();
                 for (Long keeperId : keeperIds) {
                     messageService.createMessage(keeperId, title, title, "ALERT", "INVENTORY", productId);
@@ -208,6 +220,14 @@ public class PurchaseService {
             }
         } catch (Exception ignored) {
         }
+    }
+
+    private String requireWarehouseName(Long warehouseId) {
+        Long existingId = purchaseMapper.selectWarehouseId(warehouseId);
+        if (existingId == null) {
+            throw new IllegalArgumentException("仓库不存在或已停用");
+        }
+        return purchaseMapper.selectWarehouseName(warehouseId);
     }
 
     private Long findUserIdByUsername(String username) {

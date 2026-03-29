@@ -123,3 +123,11 @@
 - 客户：`GET /api/customers` 支持 `keyword/status` 过滤，并新增 `GET /api/customers/{id}`。
 - 仓库：新增 `GET /api/warehouses/{id}`、`PUT /api/warehouses/{id}`、`PUT /api/warehouses/{id}/status`。
 - 消息：前端新增独立消息中心，复用 `GET /api/messages` 与 `POST /api/messages/{id}/read`。
+
+
+## 本次更新（2026-03-29）
+- `POST /api/purchases/{id}/inbound`：请求体需包含 `warehouseId`，可选 `remark`；成功后返回回写仓库信息的采购单。
+- `POST /api/sales/{id}/outbound`：请求体需包含 `warehouseId`，可选 `remark`；按指定仓库扣减库存。
+- `POST /api/inventory-transfers`：请求体使用 `productId`、`fromWarehouseId`、`toWarehouseId`、`quantity`、`remark`。
+- `POST /api/inventory-checks`：请求体需包含 `productId`、`warehouseId`、`quantity`、`remark`。
+- `GET /api/inventories` / `GET /api/inventory-records` / `GET /api/inventory-warnings`：支持 `warehouseId` 过滤；`GET /api/inventories` 额外支持 `keyword`、`status`。

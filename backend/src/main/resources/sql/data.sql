@@ -3,6 +3,7 @@ DELETE FROM sales_orders;
 DELETE FROM inventory_records;
 DELETE FROM purchase_orders;
 DELETE FROM inventories;
+DELETE FROM warehouses;
 DELETE FROM customers;
 DELETE FROM suppliers;
 DELETE FROM categories;
@@ -45,24 +46,33 @@ INSERT INTO customers (id, name, contact_name, contact_phone, address, status) V
 (1, '武汉零售客户A', '陈老板', '13900000001', '武汉市江汉区', 'ENABLED'),
 (2, '长沙零售客户B', '周老板', '13900000002', '长沙市雨花区', 'ENABLED');
 
-INSERT INTO inventories (id, product_id, warehouse_name, quantity, warning_threshold) VALUES
-(1, 1, '中心仓', 40, 20),
-(2, 2, '中心仓', 55, 30),
-(3, 3, '中心仓', 18, 15);
+INSERT INTO warehouses (id, name, address, status) VALUES
+(1, '中心仓', '武汉市中心仓', 'ENABLED'),
+(2, '东区仓', '武汉市东区仓', 'ENABLED'),
+(3, '南区仓', '武汉市南区仓', 'ENABLED');
 
-INSERT INTO purchase_orders (id, order_no, supplier_id, product_id, quantity, unit_price, total_amount, status, created_by, received_at, inbound_at) VALUES
-(1, 'PO20260323001', 1, 1, 20, 420.00, 8400.00, 'INBOUND', 'buyer', NOW(), NOW()),
-(2, 'PO20260323002', 2, 3, 12, 175.00, 2100.00, 'RECEIVED', 'buyer', NOW(), NULL),
-(3, 'PO20260323003', 1, 2, 15, 210.00, 3150.00, 'CREATED', 'buyer', NULL, NULL);
+INSERT INTO inventories (id, product_id, warehouse_id, warehouse_name, quantity, warning_threshold) VALUES
+(1, 1, 1, '中心仓', 40, 20),
+(2, 2, 1, '中心仓', 55, 30),
+(3, 3, 1, '中心仓', 18, 15),
+(4, 1, 2, '东区仓', 12, 20),
+(5, 2, 3, '南区仓', 8, 30);
 
-INSERT INTO inventory_records (id, product_id, biz_type, biz_id, change_qty, before_qty, after_qty, operator_name, remark) VALUES
-(1, 1, 'PURCHASE_INBOUND', 1, 20, 20, 40, '系统初始化', '初始化采购入库'),
-(2, 2, 'INITIAL', NULL, 55, 0, 55, '系统初始化', '初始化库存'),
-(3, 3, 'INITIAL', NULL, 18, 0, 18, '系统初始化', '初始化库存');
+INSERT INTO purchase_orders (id, order_no, supplier_id, product_id, quantity, unit_price, total_amount, status, created_by, warehouse_id, warehouse_name, received_at, inbound_at) VALUES
+(1, 'PO20260323001', 1, 1, 20, 420.00, 8400.00, 'INBOUND', 'buyer', 1, '中心仓', NOW(), NOW()),
+(2, 'PO20260323002', 2, 3, 12, 175.00, 2100.00, 'RECEIVED', 'buyer', NULL, NULL, NOW(), NULL),
+(3, 'PO20260323003', 1, 2, 15, 210.00, 3150.00, 'CREATED', 'buyer', NULL, NULL, NULL, NULL);
 
-INSERT INTO sales_orders (id, order_no, customer_id, product_id, quantity, unit_price, total_amount, paid_amount, status, created_by, outbound_at) VALUES
-(1, 'SO20260323001', 1, 2, 10, 250.00, 2500.00, 2500.00, 'PAID', 'seller', NOW()),
-(2, 'SO20260323002', 2, 1, 6, 470.00, 2820.00, 0.00, 'CREATED', 'seller', NULL);
+INSERT INTO inventory_records (id, product_id, biz_type, biz_id, warehouse_id, warehouse_name, from_warehouse_id, from_warehouse_name, to_warehouse_id, to_warehouse_name, change_qty, before_qty, after_qty, operator_name, remark) VALUES
+(1, 1, 'PURCHASE_INBOUND', 1, 1, '中心仓', NULL, NULL, NULL, NULL, 20, 20, 40, '系统初始化', '初始化采购入库'),
+(2, 2, 'INITIAL', NULL, 1, '中心仓', NULL, NULL, NULL, NULL, 55, 0, 55, '系统初始化', '初始化库存'),
+(3, 3, 'INITIAL', NULL, 1, '中心仓', NULL, NULL, NULL, NULL, 18, 0, 18, '系统初始化', '初始化库存'),
+(4, 1, 'TRANSFER_OUT', NULL, 1, '中心仓', 1, '中心仓', 2, '东区仓', -8, 48, 40, '系统初始化', '初始化调拨出库'),
+(5, 1, 'TRANSFER_IN', NULL, 2, '东区仓', 1, '中心仓', 2, '东区仓', 8, 4, 12, '系统初始化', '初始化调拨入库');
+
+INSERT INTO sales_orders (id, order_no, customer_id, product_id, quantity, unit_price, total_amount, paid_amount, status, created_by, warehouse_id, warehouse_name, outbound_at) VALUES
+(1, 'SO20260323001', 1, 2, 10, 250.00, 2500.00, 2500.00, 'PAID', 'seller', 1, '中心仓', NOW()),
+(2, 'SO20260323002', 2, 1, 6, 470.00, 2820.00, 0.00, 'CREATED', 'seller', NULL, NULL, NULL);
 
 INSERT INTO payment_records (id, sales_order_id, amount, payer_name, remark) VALUES
 (1, 1, 2500.00, '陈老板', '初始化全额回款');
@@ -134,4 +144,3 @@ INSERT INTO role_permissions (role_code, permission_code) VALUES
 ('KEEPER', 'inventory:import'),
 ('KEEPER', 'report:view'),
 ('KEEPER', 'trace:view');
-

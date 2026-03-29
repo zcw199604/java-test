@@ -7,6 +7,7 @@ import com.example.tobacco.model.CreateSalesRequest;
 import com.example.tobacco.model.PaymentRequest;
 import com.example.tobacco.model.ReportSummaryItem;
 import com.example.tobacco.model.SalesOrderItem;
+import com.example.tobacco.model.WarehouseActionRequest;
 import com.example.tobacco.util.ExcelUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -108,7 +109,7 @@ public class SalesService {
     }
 
     @Transactional
-    public SalesOrderItem outbound(Long id, String username, String roleCode) {
+    public SalesOrderItem outbound(Long id, WarehouseActionRequest request, String username, String roleCode) {
         requireApprovalRole(roleCode, "销售出库确认");
         SalesOrderItem item = loadDetail(id);
         if (!"APPROVED".equals(item.getStatus())) {
@@ -117,17 +118,28 @@ public class SalesService {
             }
             throw new IllegalArgumentException("销售单需审核通过后才能出库");
         }
-        Integer beforeQty = salesMapper.selectInventoryQuantity(item.getProductId());
+        Long warehouseId = request.getWarehouseId();
+        if (warehouseId == null) {
+            throw new IllegalArgumentException("销售出库必须选择仓库");
+        }
+        String warehouseName = requireWarehouseName(warehouseId);
+        Integer beforeQty = salesMapper.selectInventoryQuantity(item.getProductId(), warehouseId);
         if (beforeQty == null || beforeQty < item.getQuantity()) {
-            throw new IllegalArgumentException("库存不足，无法出库");
+            throw new IllegalArgumentException("指定仓库库存不足，无法出库");
         }
         int afterQty = beforeQty - item.getQuantity();
-        salesMapper.updateInventoryQuantity(item.getProductId(), afterQty);
-        salesMapper.outboundOrder(id);
-        salesMapper.insertInventoryRecord(item.getProductId(), "SALES_OUTBOUND", id, -item.getQuantity(), beforeQty, afterQty, username, "销售出库");
-        auditService.trace("SALES", id, item.getOrderNo(), "OUTBOUND", "销售出库", username, "出库数量: " + item.getQuantity());
-        auditService.logOperation(findUserIdByUsername(username), username, "SALES", "OUTBOUND", "SALES", id, "销售出库，数量:" + item.getQuantity());
-        checkAndNotifyWarning(item.getProductId(), afterQty);
+        salesMapper.updateInventoryQuantity(item.getProductId(), warehouseId, afterQty);
+        salesMapper.outboundOrder(id, warehouseId, warehouseName);
+        String remark = request.getRemark();
+        if (remark == null || remark.trim().isEmpty()) {
+            remark = "销售出库";
+        }
+        salesMapper.insertInventoryRecord(item.getProductId(), "SALES_OUTBOUND", id, -item.getQuantity(), beforeQty, afterQty,
+                warehouseId, warehouseName, null, null, null, null, username, remark);
+        auditService.trace("SALES", id, item.getOrderNo(), "OUTBOUND", "销售出库", username, "出库数量: " + item.getQuantity() + "，仓库: " + warehouseName);
+        auditService.logOperation(findUserIdByUsername(username), username, "SALES", "OUTBOUND", "SALES", id,
+                "销售出库，数量:" + item.getQuantity() + "，仓库:" + warehouseName);
+        checkAndNotifyWarning(item.getProductId(), warehouseName, afterQty);
         return loadDetail(id);
     }
 
@@ -201,12 +213,12 @@ public class SalesService {
         return result;
     }
 
-    private void checkAndNotifyWarning(Long productId, int currentQty) {
+    private void checkAndNotifyWarning(Long productId, String warehouseName, int currentQty) {
         try {
             Integer threshold = salesMapper.selectInventoryWarningThreshold(productId);
             if (threshold != null && currentQty <= threshold) {
                 String productName = salesMapper.selectProductName(productId);
-                String title = "库存预警: " + productName + " 当前库存" + currentQty + "，低于阈值" + threshold;
+                String title = "库存预警: " + productName + " 在" + warehouseName + "当前库存" + currentQty + "，低于阈值" + threshold;
                 List<Long> keeperIds = salesMapper.selectKeeperIds();
                 for (Long keeperId : keeperIds) {
                     messageService.createMessage(keeperId, title, title, "ALERT", "INVENTORY", productId);
@@ -214,6 +226,14 @@ public class SalesService {
             }
         } catch (Exception ignored) {
         }
+    }
+
+    private String requireWarehouseName(Long warehouseId) {
+        Long existingId = salesMapper.selectWarehouseId(warehouseId);
+        if (existingId == null) {
+            throw new IllegalArgumentException("仓库不存在或已停用");
+        }
+        return salesMapper.selectWarehouseName(warehouseId);
     }
 
     private Long findUserIdByUsername(String username) {

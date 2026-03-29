@@ -21,6 +21,8 @@ public class SalesOrderItem {
     private String auditedAt;
     private String auditRemark;
     private String cancelReason;
+    private Long warehouseId;
+    private String warehouseName;
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getOrderNo() { return orderNo; }
@@ -57,4 +59,8 @@ public class SalesOrderItem {
     public void setAuditRemark(String auditRemark) { this.auditRemark = auditRemark; }
     public String getCancelReason() { return cancelReason; }
     public void setCancelReason(String cancelReason) { this.cancelReason = cancelReason; }
+    public Long getWarehouseId() { return warehouseId; }
+    public void setWarehouseId(Long warehouseId) { this.warehouseId = warehouseId; }
+    public String getWarehouseName() { return warehouseName; }
+    public void setWarehouseName(String warehouseName) { this.warehouseName = warehouseName; }
 }

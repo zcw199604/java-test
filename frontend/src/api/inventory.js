@@ -1,8 +1,8 @@
 import http from './http'
 
-export const fetchInventories = () => http.get('/inventories')
-export const fetchInventoryRecords = () => http.get('/inventory-records')
-export const fetchInventoryWarnings = () => http.get('/inventory-warnings')
+export const fetchInventories = (params = {}) => http.get('/inventories', { params })
+export const fetchInventoryRecords = (params = {}) => http.get('/inventory-records', { params })
+export const fetchInventoryWarnings = (params = {}) => http.get('/inventory-warnings', { params })
 export const createInventoryAction = (payload) => {
   const url = payload.actionType === 'TRANSFER' ? '/inventory-transfers' : '/inventory-checks'
   return http.post(url, payload)

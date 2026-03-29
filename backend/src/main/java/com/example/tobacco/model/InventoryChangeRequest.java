@@ -8,8 +8,9 @@ public class InventoryChangeRequest {
     @NotNull private Long productId;
     @NotNull @Min(1) private Integer quantity;
     @NotBlank private String remark;
-    private String fromWarehouse;
-    private String toWarehouse;
+    private Long warehouseId;
+    private Long fromWarehouseId;
+    private Long toWarehouseId;
 
     public Long getProductId() { return productId; }
     public void setProductId(Long productId) { this.productId = productId; }
@@ -17,8 +18,10 @@ public class InventoryChangeRequest {
     public void setQuantity(Integer quantity) { this.quantity = quantity; }
     public String getRemark() { return remark; }
     public void setRemark(String remark) { this.remark = remark; }
-    public String getFromWarehouse() { return fromWarehouse; }
-    public void setFromWarehouse(String fromWarehouse) { this.fromWarehouse = fromWarehouse; }
-    public String getToWarehouse() { return toWarehouse; }
-    public void setToWarehouse(String toWarehouse) { this.toWarehouse = toWarehouse; }
+    public Long getWarehouseId() { return warehouseId; }
+    public void setWarehouseId(Long warehouseId) { this.warehouseId = warehouseId; }
+    public Long getFromWarehouseId() { return fromWarehouseId; }
+    public void setFromWarehouseId(Long fromWarehouseId) { this.fromWarehouseId = fromWarehouseId; }
+    public Long getToWarehouseId() { return toWarehouseId; }
+    public void setToWarehouseId(Long toWarehouseId) { this.toWarehouseId = toWarehouseId; }
 }

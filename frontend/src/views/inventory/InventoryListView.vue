@@ -16,11 +16,16 @@
         </el-space>
       </template>
       <div class="toolbar">
-        <el-input v-model="keyword" placeholder="搜索商品/仓库" clearable class="filter-item" />
-        <el-select v-model="statusFilter" placeholder="库存状态" clearable class="filter-item">
+        <el-input v-model="keyword" placeholder="搜索商品/仓库" clearable class="filter-item" @keyup.enter="loadData" />
+        <el-select v-model="warehouseId" placeholder="仓库筛选" clearable class="filter-item" @change="loadData">
+          <el-option label="全部仓库" :value="null" />
+          <el-option v-for="item in warehouseOptions" :key="item.id" :label="item.name" :value="item.id" />
+        </el-select>
+        <el-select v-model="statusFilter" placeholder="库存状态" clearable class="filter-item" @change="loadData">
           <el-option label="预警中" value="warning" />
           <el-option label="正常" value="normal" />
         </el-select>
+        <el-button @click="loadData">查询</el-button>
       </div>
       <AppTable :columns="columns" :rows="filteredRows">
         <template #quantity="{ row }">
@@ -38,24 +43,43 @@ import PageSection from '../../components/PageSection.vue'
 import AppTable from '../../components/AppTable.vue'
 import KpiCard from '../../components/KpiCard.vue'
 import { fetchInventories, importInventories } from '../../api/inventory'
+import { fetchWarehouses } from '../../api/system'
 import { exportRowsToExcel } from '../../utils/export'
 
 const keyword = ref('')
+const warehouseId = ref(null)
 const statusFilter = ref('')
 const rows = ref([])
-const columns = [{ key: 'productName', label: '商品' }, { key: 'warehouseName', label: '仓库' }, { key: 'quantity', label: '实时库存' }, { key: 'warningThreshold', label: '预警阈值' }, { key: 'updatedAt', label: '更新时间', minWidth: 180 }]
+const warehouseOptions = ref([])
+const columns = [
+  { key: 'productName', label: '商品' },
+  { key: 'warehouseName', label: '仓库' },
+  { key: 'quantity', label: '实时库存' },
+  { key: 'warningThreshold', label: '预警阈值' },
+  { key: 'updatedAt', label: '更新时间', minWidth: 180 }
+]
 const warningCount = computed(() => rows.value.filter((item) => Number(item.quantity) <= Number(item.warningThreshold)).length)
 const warehouseCount = computed(() => new Set(rows.value.map((item) => item.warehouseName)).size)
 const filteredRows = computed(() => rows.value.filter((item) => {
-  const matchKeyword = !keyword.value || `${item.productName}${item.warehouseName}`.includes(keyword.value)
+  const matchKeyword = !keyword.value || `${item.productName || ''}${item.warehouseName || ''}`.includes(keyword.value)
+  const matchWarehouse = !warehouseId.value || Number(item.warehouseId) === Number(warehouseId.value)
   const isWarning = Number(item.quantity) <= Number(item.warningThreshold)
   const matchStatus = !statusFilter.value || (statusFilter.value === 'warning' ? isWarning : !isWarning)
-  return matchKeyword && matchStatus
+  return matchKeyword && matchWarehouse && matchStatus
 }))
 const handleExport = () => exportRowsToExcel(filteredRows.value, '库存总览.xlsx', 'inventory')
 
+const loadWarehouses = async () => {
+  const result = await fetchWarehouses().catch(() => ({ data: [] }))
+  warehouseOptions.value = (result.data || []).filter((item) => item.status !== 'DISABLED')
+}
+
 const loadData = async () => {
-  const result = await fetchInventories().catch(() => ({ data: [] }))
+  const result = await fetchInventories({
+    keyword: keyword.value || undefined,
+    warehouseId: warehouseId.value || undefined,
+    status: statusFilter.value || undefined
+  }).catch(() => ({ data: [] }))
   rows.value = result.data || []
 }
 
@@ -65,13 +89,15 @@ const handleImport = async ({ file }) => {
     const d = result.data || {}
     ElMessage.success(`导入完成: 成功${d.success || 0}条, 失败${d.failed || 0}条`)
     if (d.errors) ElMessage.warning(d.errors)
-    loadData()
+    await loadData()
   } catch (e) {
-    ElMessage.error('导入失败: ' + (e.message || '未知错误'))
+    ElMessage.error(`导入失败: ${e.message || '未知错误'}`)
   }
 }
 
-onMounted(loadData)
+onMounted(async () => {
+  await Promise.all([loadWarehouses(), loadData()])
+})
 </script>
 
 <style scoped>

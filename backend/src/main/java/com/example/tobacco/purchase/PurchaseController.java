@@ -5,6 +5,7 @@ import com.example.tobacco.model.AuditRequest;
 import com.example.tobacco.model.CancelRequest;
 import com.example.tobacco.model.CreatePurchaseRequest;
 import com.example.tobacco.model.PurchaseOrderItem;
+import com.example.tobacco.model.WarehouseActionRequest;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -63,8 +64,10 @@ public class PurchaseController {
     }
 
     @PostMapping("/{id}/inbound")
-    public ApiResponse<PurchaseOrderItem> inbound(@PathVariable Long id, HttpServletRequest httpRequest) {
-        return ApiResponse.success(purchaseService.inbound(id, String.valueOf(httpRequest.getAttribute("username")), String.valueOf(httpRequest.getAttribute("roleCode"))));
+    public ApiResponse<PurchaseOrderItem> inbound(@PathVariable Long id,
+                                                  @Validated @RequestBody WarehouseActionRequest request,
+                                                  HttpServletRequest httpRequest) {
+        return ApiResponse.success(purchaseService.inbound(id, request, String.valueOf(httpRequest.getAttribute("username")), String.valueOf(httpRequest.getAttribute("roleCode"))));
     }
 
     @PostMapping("/{id}/receive")

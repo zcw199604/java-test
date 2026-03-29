@@ -19,13 +19,22 @@ public class InventoryController {
     public InventoryController(InventoryService inventoryService) { this.inventoryService = inventoryService; }
 
     @GetMapping("/inventories")
-    public ApiResponse<List<InventoryItem>> list() { return ApiResponse.success(inventoryService.list()); }
+    public ApiResponse<List<InventoryItem>> list(@RequestParam(required = false) Long warehouseId,
+                                                 @RequestParam(required = false) String keyword,
+                                                 @RequestParam(required = false) String status) {
+        return ApiResponse.success(inventoryService.list(warehouseId, keyword, status));
+    }
 
     @GetMapping("/inventory-records")
-    public ApiResponse<List<InventoryRecordItem>> records() { return ApiResponse.success(inventoryService.records()); }
+    public ApiResponse<List<InventoryRecordItem>> records(@RequestParam(required = false) Long warehouseId,
+                                                          @RequestParam(required = false) String bizType) {
+        return ApiResponse.success(inventoryService.records(warehouseId, bizType));
+    }
 
     @GetMapping("/inventory-warnings")
-    public ApiResponse<List<InventoryItem>> warnings() { return ApiResponse.success(inventoryService.warnings()); }
+    public ApiResponse<List<InventoryItem>> warnings(@RequestParam(required = false) Long warehouseId) {
+        return ApiResponse.success(inventoryService.warnings(warehouseId));
+    }
 
     @PostMapping("/inventory-transfers")
     public ApiResponse<String> transfer(@Validated @RequestBody InventoryChangeRequest request, HttpServletRequest httpRequest) {

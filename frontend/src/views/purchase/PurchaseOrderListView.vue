@@ -54,7 +54,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import PageSection from '../../components/PageSection.vue'
 import AppTable from '../../components/AppTable.vue'
-import { fetchPurchases, inboundPurchase, receivePurchase, auditPurchase, cancelPurchase, importPurchases } from '../../api/purchase'
+import { fetchPurchases, receivePurchase, auditPurchase, cancelPurchase, importPurchases } from '../../api/purchase'
 import { exportRowsToExcel } from '../../utils/export'
 import { statusLabelMap, statusTypeMap } from '../../utils/format'
 
@@ -114,10 +114,8 @@ const handleReceive = async (row) => {
   loadData()
 }
 
-const handleInbound = async (row) => {
-  await inboundPurchase(row.id)
-  ElMessage.success(`采购单 ${row.orderNo} 已完成入库`)
-  loadData()
+const handleInbound = (row) => {
+  router.push({ path: '/purchase/inbound', query: { id: String(row.id) } })
 }
 
 const handleImport = async ({ file }) => {

@@ -43,7 +43,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import PageSection from '../../components/PageSection.vue'
 import AppTable from '../../components/AppTable.vue'
-import { fetchSales, outboundSales, paymentSales, auditSales, cancelSales, importSales } from '../../api/sales'
+import { fetchSales, paymentSales, auditSales, cancelSales, importSales } from '../../api/sales'
 import { exportRowsToExcel } from '../../utils/export'
 import { statusLabelMap, statusTypeMap } from '../../utils/format'
 
@@ -81,10 +81,8 @@ const handleCancel = async (row) => {
   loadData()
 }
 
-const handleOutbound = async (row) => {
-  await outboundSales(row.id)
-  ElMessage.success(`销售单 ${row.orderNo} 已完成出库`)
-  loadData()
+const handleOutbound = (row) => {
+  router.push({ path: '/sale/outbound', query: { id: String(row.id) } })
 }
 
 const handlePayment = async (row) => {

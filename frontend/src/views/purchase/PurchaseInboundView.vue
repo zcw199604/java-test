@@ -14,7 +14,7 @@
         <template #status="{ value }"><el-tag :type="statusTypeMap[value] || 'warning'">{{ statusLabelMap[value] || value }}</el-tag></template>
       </AppTable>
       <div class="dialog-footer">
-        <el-button v-permission="['purchase:edit', 'inventory:edit']" type="primary" :disabled="!selectedId || !warehouseId" @click="handleInbound">确认入库</el-button>
+        <el-button v-permission="['purchase:inbound', 'order:approve']" type="primary" :disabled="!selectedId || !warehouseId" @click="handleInbound">确认入库</el-button>
       </div>
     </PageSection>
   </div>
@@ -22,6 +22,7 @@
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import PageSection from '../../components/PageSection.vue'
 import AppTable from '../../components/AppTable.vue'
@@ -29,6 +30,7 @@ import { fetchPurchases, inboundPurchase } from '../../api/purchase'
 import { fetchWarehouses } from '../../api/system'
 import { statusLabelMap, statusTypeMap } from '../../utils/format'
 
+const route = useRoute()
 const rows = ref([])
 const warehouseOptions = ref([])
 const selectedId = ref(null)
@@ -55,12 +57,15 @@ const loadData = async () => {
   ])
   rows.value = purchaseResult.data || []
   warehouseOptions.value = (warehouseResult.data || []).filter((item) => item.status !== 'DISABLED')
-  selectedId.value = receivableRows.value[0]?.id || null
-  warehouseId.value = receivableRows.value[0]?.warehouseId || warehouseOptions.value[0]?.id || null
+  const routeId = route.query.id ? Number(route.query.id) : null
+  selectedId.value = receivableRows.value.some((item) => Number(item.id) === routeId)
+    ? routeId
+    : (receivableRows.value[0]?.id || null)
+  warehouseId.value = receivableRows.value.find((item) => item.id === selectedId.value)?.warehouseId || warehouseOptions.value[0]?.id || null
 }
 
 const handleInbound = async () => {
-  await inboundPurchase(selectedId.value, { warehouseId: warehouseId.value, batchNo: batchNo.value })
+  await inboundPurchase(selectedId.value, { warehouseId: warehouseId.value, remark: batchNo.value })
   ElMessage.success(`批次 ${batchNo.value} 入库完成，库存已同步至所选仓库`)
   await loadData()
 }

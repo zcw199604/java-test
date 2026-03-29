@@ -114,3 +114,12 @@
 - `POST /api/reports/abnormal-docs/{id}/audit`
 - `GET /api/reports/linkage`
 - `GET /api/reports/export`
+
+
+## 2026-03-28 缺失功能补齐补充
+- 认证：前端已接入 `GET /api/auth/captcha`、`POST /api/auth/forgot-password`、`POST /api/auth/reset-password`。
+- 采购：新增 `GET /api/purchases/{id}`、`PUT /api/purchases/{id}` 用于订单编辑。
+- 销售：新增 `GET /api/sales/{id}`、`PUT /api/sales/{id}` 用于订单编辑。
+- 客户：`GET /api/customers` 支持 `keyword/status` 过滤，并新增 `GET /api/customers/{id}`。
+- 仓库：新增 `GET /api/warehouses/{id}`、`PUT /api/warehouses/{id}`、`PUT /api/warehouses/{id}/status`。
+- 消息：前端新增独立消息中心，复用 `GET /api/messages` 与 `POST /api/messages/{id}/read`。

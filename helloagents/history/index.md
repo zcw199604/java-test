@@ -22,6 +22,7 @@
 | 202603281130a | inventory-warning-notify-fix | 修复 | ✅已完成 | [helloagents/history/2026-03/202603281130_inventory-warning-notify-fix](2026-03/202603281130_inventory-warning-notify-fix/) |
 | 202603281045 | role-hierarchy-fix | 修复 | ✅已完成 | [helloagents/history/2026-03/202603281045_role-hierarchy-fix](2026-03/202603281045_role-hierarchy-fix/) |
 | 202603281120 | admin-account-protection | 修复 | ✅已完成 | [helloagents/history/2026-03/202603281120_admin-account-protection](2026-03/202603281120_admin-account-protection/) |
+| 202603281415 | missing-feature-completion | 功能 | ✅已完成 | [helloagents/history/2026-03/202603281415_missing-feature-completion](2026-03/202603281415_missing-feature-completion/) |
 
 ---
 
@@ -43,3 +44,5 @@
 - [202603281045_role-hierarchy-fix](2026-03/202603281045_role-hierarchy-fix/) - 调整角色体系为五种并将默认 admin 切换为超级管理员
 - [202603281120_admin-account-protection](2026-03/202603281120_admin-account-protection/) - 限制普通管理员修改、停用和删除管理员类账号
 - [202603281130_inventory-warning-notify-fix](2026-03/202603281130_inventory-warning-notify-fix/) - 为库存调拨与盘点接入低库存预警消息通知
+
+- [202603281415_missing-feature-completion](2026-03/202603281415_missing-feature-completion/) - 补齐认证前端闭环、客户/仓库维护、订单编辑、库存/报表增强与独立消息中心

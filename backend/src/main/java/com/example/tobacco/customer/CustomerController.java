@@ -13,7 +13,11 @@ public class CustomerController {
     private final CustomerService customerService;
     public CustomerController(CustomerService customerService) { this.customerService = customerService; }
     @GetMapping
-    public ApiResponse<List<CustomerItem>> list() { return ApiResponse.success(customerService.list()); }
+    public ApiResponse<List<CustomerItem>> list(@RequestParam(required = false) String keyword, @RequestParam(required = false) String status) {
+        return ApiResponse.success(customerService.list(keyword, status));
+    }
+    @GetMapping("/{id}")
+    public ApiResponse<CustomerItem> detail(@PathVariable Long id) { return ApiResponse.success(customerService.detail(id)); }
     @PostMapping
     public ApiResponse<String> create(@RequestBody Map<String, String> request) { customerService.create(request); return ApiResponse.success("ok"); }
     @PutMapping("/{id}")

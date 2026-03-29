@@ -12,7 +12,13 @@ import org.springframework.stereotype.Service;
 import javax.servlet.http.HttpServletRequest;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class AuthService {
@@ -31,12 +37,15 @@ public class AuthService {
 
     public Map<String, String> createCaptcha() {
         String captchaKey = UUID.randomUUID().toString().replace("-", "");
-        String captchaCode = String.valueOf(1000 + new Random().nextInt(9000));
-        jdbcTemplate.update("insert into captcha_records(captcha_key, captcha_code, expire_at, status) values(?,?,?,?)",
-                captchaKey, captchaCode, Timestamp.valueOf(LocalDateTime.now().plusMinutes(10)), "NEW");
+        String captchaCode = String.valueOf(1000 + (int) (Math.random() * 9000));
+        LocalDateTime expireAt = LocalDateTime.now().plusMinutes(10);
+        insertCaptchaRecord(captchaKey, captchaCode, expireAt);
         Map<String, String> result = new LinkedHashMap<String, String>();
         result.put("captchaKey", captchaKey);
         result.put("captchaCode", captchaCode);
+        result.put("uuid", captchaKey);
+        result.put("code", captchaCode);
+        result.put("expiredAt", expireAt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
         return result;
     }
 
@@ -64,9 +73,9 @@ public class AuthService {
 
         String token = UUID.randomUUID().toString().replace("-", "");
         Long userId = ((Number) row.get("id")).longValue();
-        jdbcTemplate.update("insert into user_sessions(session_token, user_id, username, role_code, expire_at, status) values(?,?,?,?,?,?)",
-                token, userId, request.getUsername(), String.valueOf(row.get("role_code")), Timestamp.valueOf(LocalDateTime.now().plusHours(12)), "ACTIVE");
+        insertUserSession(token, userId, request.getUsername(), String.valueOf(row.get("role_code")), LocalDateTime.now().plusHours(12));
         auditService.logLogin(userId, request.getUsername(), "SUCCESS", "登录成功", clientIp(httpRequest), clientAgent(httpRequest));
+        auditService.logOperation(userId, request.getUsername(), "AUTH", "LOGIN", "USER_SESSION", userId, "用户登录");
         return buildResponse(toProfile(row), token);
     }
 
@@ -81,7 +90,16 @@ public class AuthService {
     }
 
     public void logout(String token) {
-        jdbcTemplate.update("update user_sessions set status='LOGOUT' where session_token=?", token);
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                "select user_id as userId from user_sessions where " + userSessionTokenColumn() + "=? order by id desc limit 1",
+                token);
+        jdbcTemplate.update("update user_sessions set status='LOGOUT' where " + userSessionTokenColumn() + "=?", token);
+        if (!rows.isEmpty()) {
+            Map<String, Object> row = rows.get(0);
+            Long userId = row.get("userId") == null ? null : ((Number) row.get("userId")).longValue();
+            String username = findUsernameByUserId(userId);
+            auditService.logOperation(userId, username, "AUTH", "LOGOUT", "USER_SESSION", userId, "用户登出");
+        }
     }
 
     public Map<String, String> forgotPassword(ForgotPasswordRequest request) {
@@ -92,18 +110,21 @@ public class AuthService {
         }
         Long userId = ((Number) rows.get(0).get("id")).longValue();
         String resetToken = UUID.randomUUID().toString().replace("-", "");
-        jdbcTemplate.update("insert into password_reset_records(user_id, username, reset_token, expire_at, status) values(?,?,?,?,?)",
-                userId, request.getUsername(), resetToken, Timestamp.valueOf(LocalDateTime.now().plusMinutes(30)), "NEW");
+        insertPasswordResetRecord(userId, request.getUsername(), resetToken, LocalDateTime.now().plusMinutes(30));
         auditService.logOperation(userId, request.getUsername(), "AUTH", "FORGOT_PASSWORD", "PASSWORD_RESET", userId, "发起密码重置");
         Map<String, String> result = new LinkedHashMap<String, String>();
         result.put("resetToken", resetToken);
+        result.put("token", resetToken);
         result.put("message", "reset token generated");
         return result;
     }
 
     public void resetPassword(ResetPasswordRequest request) {
+        String tokenColumn = passwordResetTokenColumn();
+        String expireColumn = passwordResetExpireColumn();
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "select id, user_id as userId, status, expire_at as expireAt from password_reset_records where username=? and reset_token=? order by id desc limit 1",
+                "select pr.id, pr.user_id as userId, pr.status, pr." + expireColumn + " as expireAt from password_reset_records pr " +
+                        "left join users u on pr.user_id = u.id where u.username=? and pr." + tokenColumn + "=? order by pr.id desc limit 1",
                 request.getUsername(), request.getResetToken());
         if (rows.isEmpty()) {
             throw new IllegalArgumentException("重置凭证无效");
@@ -115,7 +136,11 @@ public class AuthService {
         }
         String encoded = passwordCodec.encode(request.getUsername(), request.getNewPassword());
         jdbcTemplate.update("update users set password=? where username=?", encoded, request.getUsername());
-        jdbcTemplate.update("update password_reset_records set status='USED', used_at=now() where id=?", ((Number) row.get("id")).longValue());
+        if (columnExists("password_reset_records", "used_at")) {
+            jdbcTemplate.update("update password_reset_records set status='USED', used_at=now() where id=?", ((Number) row.get("id")).longValue());
+        } else {
+            jdbcTemplate.update("update password_reset_records set status='USED' where id=?", ((Number) row.get("id")).longValue());
+        }
         auditService.logOperation(((Number) row.get("userId")).longValue(), request.getUsername(), "AUTH", "RESET_PASSWORD", "PASSWORD_RESET", ((Number) row.get("id")).longValue(), "完成密码重置");
     }
 
@@ -162,15 +187,21 @@ public class AuthService {
     }
 
     private void validateCaptchaIfPresent(String captchaKey, String captchaCode) {
-        if (captchaKey == null || captchaKey.trim().length() == 0) {
+        if (!hasText(captchaKey) && !hasText(captchaCode)) {
             return;
         }
         validateCaptcha(captchaKey, captchaCode);
     }
 
     private void validateCaptcha(String captchaKey, String captchaCode) {
+        if (!hasText(captchaKey) || !hasText(captchaCode)) {
+            throw new IllegalArgumentException("验证码不能为空");
+        }
+        String keyColumn = captchaKeyColumn();
+        String codeColumn = captchaCodeColumn();
+        String expireColumn = captchaExpireColumn();
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "select id, captcha_code, expire_at as expireAt, status from captcha_records where captcha_key=? order by id desc limit 1",
+                "select id, " + codeColumn + " as captchaCode, " + expireColumn + " as expireAt, status from captcha_records where " + keyColumn + "=? order by id desc limit 1",
                 captchaKey);
         if (rows.isEmpty()) {
             throw new IllegalArgumentException("验证码无效");
@@ -180,10 +211,135 @@ public class AuthService {
         if (!"NEW".equals(String.valueOf(row.get("status"))) || expireAt == null || expireAt.isBefore(LocalDateTime.now())) {
             throw new IllegalArgumentException("验证码已失效");
         }
-        if (!String.valueOf(row.get("captcha_code")).equals(captchaCode)) {
+        if (!String.valueOf(row.get("captchaCode")).equals(captchaCode)) {
             throw new IllegalArgumentException("验证码错误");
         }
         jdbcTemplate.update("update captcha_records set status='USED' where id=?", ((Number) row.get("id")).longValue());
+    }
+
+    private void insertCaptchaRecord(String captchaKey, String captchaCode, LocalDateTime expireAt) {
+        List<String> columns = new ArrayList<String>();
+        List<Object> values = new ArrayList<Object>();
+        columns.add(captchaKeyColumn());
+        values.add(captchaKey);
+        columns.add(captchaCodeColumn());
+        values.add(captchaCode);
+        columns.add(captchaExpireColumn());
+        values.add(Timestamp.valueOf(expireAt));
+        columns.add("status");
+        values.add("NEW");
+        jdbcTemplate.update("insert into captcha_records(" + join(columns) + ") values(" + placeholders(columns.size()) + ")", values.toArray());
+    }
+
+    private void insertUserSession(String token, Long userId, String username, String roleCode, LocalDateTime expireAt) {
+        List<String> columns = new ArrayList<String>();
+        List<Object> values = new ArrayList<Object>();
+        columns.add(userSessionTokenColumn());
+        values.add(token);
+        columns.add("user_id");
+        values.add(userId);
+        if (columnExists("user_sessions", "username")) {
+            columns.add("username");
+            values.add(username);
+        }
+        if (columnExists("user_sessions", "role_code")) {
+            columns.add("role_code");
+            values.add(roleCode);
+        }
+        columns.add(userSessionExpireColumn());
+        values.add(Timestamp.valueOf(expireAt));
+        columns.add("status");
+        values.add("ACTIVE");
+        jdbcTemplate.update("insert into user_sessions(" + join(columns) + ") values(" + placeholders(columns.size()) + ")", values.toArray());
+    }
+
+    private String findUsernameByUserId(Long userId) {
+        if (userId == null) {
+            return null;
+        }
+        try {
+            return jdbcTemplate.queryForObject("select username from users where id=?", String.class, userId);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private void insertPasswordResetRecord(Long userId, String username, String resetToken, LocalDateTime expireAt) {
+        List<String> columns = new ArrayList<String>();
+        List<Object> values = new ArrayList<Object>();
+        columns.add("user_id");
+        values.add(userId);
+        if (columnExists("password_reset_records", "username")) {
+            columns.add("username");
+            values.add(username);
+        }
+        columns.add(passwordResetTokenColumn());
+        values.add(resetToken);
+        columns.add(passwordResetExpireColumn());
+        values.add(Timestamp.valueOf(expireAt));
+        columns.add("status");
+        values.add("NEW");
+        jdbcTemplate.update("insert into password_reset_records(" + join(columns) + ") values(" + placeholders(columns.size()) + ")", values.toArray());
+    }
+
+    private String captchaKeyColumn() {
+        return tableColumn("captcha_records", "captcha_key", "uuid");
+    }
+
+    private String captchaCodeColumn() {
+        return tableColumn("captcha_records", "captcha_code", "code");
+    }
+
+    private String captchaExpireColumn() {
+        return tableColumn("captcha_records", "expire_at", "expired_at");
+    }
+
+    private String userSessionTokenColumn() {
+        return tableColumn("user_sessions", "session_token", "token");
+    }
+
+    private String userSessionExpireColumn() {
+        return tableColumn("user_sessions", "expire_at", "expired_at");
+    }
+
+    private String passwordResetTokenColumn() {
+        return tableColumn("password_reset_records", "reset_token", "token");
+    }
+
+    private String passwordResetExpireColumn() {
+        return tableColumn("password_reset_records", "expire_at", "expired_at");
+    }
+
+    private String tableColumn(String tableName, String primary, String fallback) {
+        return columnExists(tableName, primary) ? primary : fallback;
+    }
+
+    private boolean columnExists(String tableName, String columnName) {
+        Integer count = jdbcTemplate.queryForObject(
+                "select count(*) from information_schema.columns where table_schema = database() and table_name = ? and column_name = ?",
+                Integer.class,
+                tableName,
+                columnName);
+        return count != null && count > 0;
+    }
+
+    private String join(List<String> columns) {
+        return String.join(",", columns);
+    }
+
+    private String placeholders(int size) {
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < size; i++) {
+            if (i > 0) {
+                builder.append(',');
+            }
+            builder.append('?');
+        }
+        return builder.toString();
+    }
+
+    private boolean hasText(String value) {
+        return value != null && value.trim().length() > 0;
     }
 
     private LocalDateTime toLocalDateTime(Object value) {

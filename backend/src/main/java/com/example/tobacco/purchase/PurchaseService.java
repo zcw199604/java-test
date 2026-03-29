@@ -54,9 +54,20 @@ public class PurchaseService {
                 new BeanPropertyRowMapper<PurchaseOrderItem>(PurchaseOrderItem.class));
     }
 
+    public PurchaseOrderItem detail(Long id) {
+        return loadDetail(id);
+    }
+
+    public List<Map<String, Object>> trace(Long id) {
+        PurchaseOrderItem item = loadDetail(id);
+        return jdbcTemplate.queryForList(
+                "select id, biz_type as bizType, biz_id as bizId, order_no as orderNo, node_code as nodeCode, node_name as nodeName, operator, remark, DATE_FORMAT(created_at,'%Y-%m-%d %H:%i:%s') as createdAt from trace_records where biz_type='PURCHASE' and (biz_id=? or order_no=?) order by id desc",
+                id, item.getOrderNo());
+    }
+
     @Transactional
     public PurchaseOrderItem create(CreatePurchaseRequest request, String username) {
-        BigDecimal total = request.getUnitPrice().multiply(new BigDecimal(request.getQuantity()));
+        BigDecimal total = request.getUnitPrice().multiply(new BigDecimal(request.getQuantity())).setScale(2, java.math.RoundingMode.HALF_UP);
         String orderNo = "PO" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
         jdbcTemplate.update(
                 "insert into purchase_orders(order_no,supplier_id,product_id,quantity,unit_price,total_amount,status,created_by) values(?,?,?,?,?,?,?,?)",
@@ -65,13 +76,29 @@ public class PurchaseService {
         Long id = jdbcTemplate.queryForObject("select id from purchase_orders where order_no=?", Long.class, orderNo);
         auditService.trace("PURCHASE", id, orderNo, "CREATE", "创建采购单", username, "创建采购单");
         auditService.logOperation(findUserIdByUsername(username), username, "PURCHASE", "CREATE", "PURCHASE", id, "创建采购单" + orderNo);
-        return detail(id);
+        return loadDetail(id);
+    }
+
+    @Transactional
+    public PurchaseOrderItem update(Long id, CreatePurchaseRequest request, String operatorName, String roleCode) {
+        PurchaseOrderItem item = loadDetail(id);
+        ensureEditable(item.getStatus(), roleCode);
+        if (isPurchaser(roleCode) && !String.valueOf(item.getCreatedBy()).equals(operatorName)) {
+            throw new IllegalArgumentException("仅允许修改本人创建的采购订单");
+        }
+        BigDecimal total = request.getUnitPrice().multiply(new BigDecimal(request.getQuantity())).setScale(2, java.math.RoundingMode.HALF_UP);
+        jdbcTemplate.update(
+                "update purchase_orders set supplier_id=?, product_id=?, quantity=?, unit_price=?, total_amount=?, status='CREATED', audited_by=null, audited_at=null, audit_remark=null, cancel_reason=null where id=?",
+                request.getSupplierId(), request.getProductId(), request.getQuantity(), request.getUnitPrice(), total, id);
+        auditService.trace("PURCHASE", id, item.getOrderNo(), "UPDATE", "更新采购单", operatorName, "更新采购单明细");
+        auditService.logOperation(findUserIdByUsername(operatorName), operatorName, "PURCHASE", "UPDATE", "PURCHASE", id, "更新采购单");
+        return loadDetail(id);
     }
 
     @Transactional
     public PurchaseOrderItem audit(Long id, String decision, String remark, String operator, String roleCode) {
         requireApprovalRole(roleCode, "采购审核");
-        PurchaseOrderItem item = detail(id);
+        PurchaseOrderItem item = loadDetail(id);
         if (!"CREATED".equals(item.getStatus())) {
             throw new IllegalArgumentException("仅待审核状态的采购单可审核");
         }
@@ -87,7 +114,6 @@ public class PurchaseService {
                 newStatus, operator, remark, id);
         auditService.trace("PURCHASE", id, item.getOrderNo(), "AUDIT", "审核采购单", operator, newStatus + ": " + (remark == null ? "" : remark));
         auditService.logOperation(findUserIdByUsername(operator), operator, "PURCHASE", "AUDIT", "PURCHASE", id, "审核采购单:" + newStatus);
-        // 推送审核结果消息给创建者
         Long creatorId = findUserIdByUsername(item.getCreatedBy());
         if (creatorId != null) {
             String title = "APPROVED".equals(newStatus)
@@ -95,25 +121,25 @@ public class PurchaseService {
                     : "采购单 " + item.getOrderNo() + " 被驳回: " + (remark == null ? "" : remark);
             messageService.createMessage(creatorId, title, title, "NOTICE", "PURCHASE", id);
         }
-        return detail(id);
+        return loadDetail(id);
     }
 
     @Transactional
     public PurchaseOrderItem cancel(Long id, String reason, String operatorName) {
-        PurchaseOrderItem item = detail(id);
+        PurchaseOrderItem item = loadDetail(id);
         if (!"CREATED".equals(item.getStatus()) && !"REJECTED".equals(item.getStatus())) {
             throw new IllegalArgumentException("仅待审核或已驳回状态的采购单可取消");
         }
         jdbcTemplate.update("update purchase_orders set status='CANCELLED', cancel_reason=? where id=?", reason, id);
         auditService.trace("PURCHASE", id, item.getOrderNo(), "CANCEL", "取消采购单", operatorName, reason == null ? "" : reason);
         auditService.logOperation(findUserIdByUsername(operatorName), operatorName, "PURCHASE", "CANCEL", "PURCHASE", id, "取消采购单");
-        return detail(id);
+        return loadDetail(id);
     }
 
     @Transactional
     public PurchaseOrderItem receive(Long id, String operatorName, String roleCode) {
         requireApprovalRole(roleCode, "采购到货确认");
-        PurchaseOrderItem item = detail(id);
+        PurchaseOrderItem item = loadDetail(id);
         if ("INBOUND".equals(item.getStatus()) || "RECEIVED".equals(item.getStatus())) {
             return item;
         }
@@ -123,13 +149,13 @@ public class PurchaseService {
         jdbcTemplate.update("update purchase_orders set status='RECEIVED', received_at=now() where id=? and status='APPROVED'", id);
         auditService.trace("PURCHASE", id, item.getOrderNo(), "RECEIVE", "到货登记", operatorName, "到货登记");
         auditService.logOperation(findUserIdByUsername(operatorName), operatorName, "PURCHASE", "RECEIVE", "PURCHASE", id, "采购到货登记");
-        return detail(id);
+        return loadDetail(id);
     }
 
     @Transactional
     public PurchaseOrderItem inbound(Long id, String operatorName, String roleCode) {
         requireApprovalRole(roleCode, "采购入库确认");
-        PurchaseOrderItem item = detail(id);
+        PurchaseOrderItem item = loadDetail(id);
         if ("INBOUND".equals(item.getStatus())) {
             return item;
         }
@@ -157,9 +183,8 @@ public class PurchaseService {
                 item.getProductId(), "PURCHASE_INBOUND", id, item.getQuantity(), beforeQty, afterQty, operatorName, "采购单入库");
         auditService.trace("PURCHASE", id, item.getOrderNo(), "INBOUND", "采购入库", operatorName, "入库数量: " + item.getQuantity());
         auditService.logOperation(findUserIdByUsername(operatorName), operatorName, "PURCHASE", "INBOUND", "PURCHASE", id, "采购入库，数量:" + item.getQuantity());
-        // 库存预警检查
         checkAndNotifyWarning(item.getProductId(), afterQty);
-        return detail(id);
+        return loadDetail(id);
     }
 
     @Transactional
@@ -237,7 +262,24 @@ public class PurchaseService {
                 || "KEEPER".equalsIgnoreCase(roleCode);
     }
 
-    private PurchaseOrderItem detail(Long id) {
+    private boolean isPurchaser(String roleCode) {
+        return "PURCHASER".equalsIgnoreCase(roleCode);
+    }
+
+    private void ensureEditable(String status, String roleCode) {
+        if ("APPROVED".equals(status) || "CANCELLED".equals(status)) {
+            throw new IllegalArgumentException("仅 CREATED 或 REJECTED 状态的采购单可编辑");
+        }
+        if (!"CREATED".equals(status) && !"REJECTED".equals(status) && !isAdminEditor(roleCode)) {
+            throw new IllegalArgumentException("仅 CREATED 或 REJECTED 状态的采购单可编辑");
+        }
+    }
+
+    private boolean isAdminEditor(String roleCode) {
+        return "SUPER_ADMIN".equalsIgnoreCase(roleCode) || "ADMIN".equalsIgnoreCase(roleCode);
+    }
+
+    private PurchaseOrderItem loadDetail(Long id) {
         return jdbcTemplate.queryForObject(
                 PURCHASE_DETAIL_SQL + " where p.id=?",
                 new BeanPropertyRowMapper<PurchaseOrderItem>(PurchaseOrderItem.class), id);

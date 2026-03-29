@@ -21,9 +21,19 @@ public class SalesController {
         return ApiResponse.success(salesService.list(String.valueOf(request.getAttribute("username")), String.valueOf(request.getAttribute("roleCode"))));
     }
 
+    @GetMapping("/{id}")
+    public ApiResponse<SalesOrderItem> detail(@PathVariable Long id, HttpServletRequest request) {
+        return ApiResponse.success(salesService.detail(id, String.valueOf(request.getAttribute("username")), String.valueOf(request.getAttribute("roleCode"))));
+    }
+
     @PostMapping
     public ApiResponse<SalesOrderItem> create(@Validated @RequestBody CreateSalesRequest request, HttpServletRequest httpRequest) {
         return ApiResponse.success(salesService.create(request, String.valueOf(httpRequest.getAttribute("username"))));
+    }
+
+    @PutMapping("/{id}")
+    public ApiResponse<SalesOrderItem> update(@PathVariable Long id, @Validated @RequestBody CreateSalesRequest request, HttpServletRequest httpRequest) {
+        return ApiResponse.success(salesService.update(id, request, String.valueOf(httpRequest.getAttribute("username")), String.valueOf(httpRequest.getAttribute("roleCode"))));
     }
 
     @PostMapping("/{id}/audit")
@@ -49,6 +59,11 @@ public class SalesController {
     @GetMapping("/statistics")
     public ApiResponse<ReportSummaryItem> statistics(HttpServletRequest request) {
         return ApiResponse.success(salesService.statistics(String.valueOf(request.getAttribute("username")), String.valueOf(request.getAttribute("roleCode"))));
+    }
+
+    @GetMapping("/receivables")
+    public ApiResponse<List<Map<String, Object>>> receivables(HttpServletRequest request) {
+        return ApiResponse.success(salesService.receivables(String.valueOf(request.getAttribute("username")), String.valueOf(request.getAttribute("roleCode"))));
     }
 
     @PostMapping("/import")

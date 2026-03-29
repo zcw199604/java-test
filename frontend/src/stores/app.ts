@@ -68,6 +68,9 @@ export const useAppStore = defineStore('app', {
         title: item.title || '系统消息',
         content: item.content || '请及时处理相关事项',
         type: item.type || 'warning',
+        bizType: item.bizType,
+        bizId: item.bizId,
+        createdAt: item.createdAt,
         read: Boolean(item.read)
       }))
     },

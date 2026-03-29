@@ -15,7 +15,7 @@
             <el-form-item label="原密码"><el-input v-model="passwordForm.oldPassword" type="password" show-password /></el-form-item>
             <el-form-item label="新密码"><el-input v-model="passwordForm.newPassword" type="password" show-password /></el-form-item>
             <el-form-item label="确认密码"><el-input v-model="passwordForm.confirmPassword" type="password" show-password /></el-form-item>
-            <el-button type="primary" @click="handlePasswordSave">保存修改</el-button>
+            <el-button type="primary" :loading="submitting" @click="handlePasswordSave">保存修改</el-button>
           </el-form>
         </el-tab-pane>
         <el-tab-pane label="我的权限">
@@ -29,15 +29,23 @@
 </template>
 
 <script setup>
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import { changePassword } from '../../api/system'
 import { useAppStore } from '../../stores/app'
 import PageSection from '../../components/PageSection.vue'
 
 const appStore = useAppStore()
+const submitting = ref(false)
 const passwordForm = reactive({ oldPassword: '', newPassword: '', confirmPassword: '' })
 
-const handlePasswordSave = () => {
+const resetForm = () => {
+  passwordForm.oldPassword = ''
+  passwordForm.newPassword = ''
+  passwordForm.confirmPassword = ''
+}
+
+const handlePasswordSave = async () => {
   if (!passwordForm.oldPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
     ElMessage.warning('请完整填写密码信息')
     return
@@ -46,6 +54,13 @@ const handlePasswordSave = () => {
     ElMessage.error('两次输入的新密码不一致')
     return
   }
-  ElMessage.success('演示环境已完成密码校验交互设计')
+  submitting.value = true
+  try {
+    await changePassword({ oldPassword: passwordForm.oldPassword, newPassword: passwordForm.newPassword })
+    ElMessage.success('密码修改成功，请牢记新密码')
+    resetForm()
+  } finally {
+    submitting.value = false
+  }
 }
 </script>

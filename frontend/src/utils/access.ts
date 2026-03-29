@@ -6,6 +6,7 @@ const adminPermissions = [
   '*:*',
   'dashboard:view',
   'profile:view',
+  'message:view',
   'admin:account:view',
   'admin:role:view',
   'admin:base:view',
@@ -15,6 +16,7 @@ const adminPermissions = [
   'purchase:edit',
   'sale:view',
   'sale:edit',
+  'bulletin:view',
   'inventory:view',
   'inventory:edit',
   'report:view',
@@ -25,9 +27,9 @@ const adminPermissions = [
 export const rolePermissionMap: Record<string, string[]> = {
   SUPER_ADMIN: adminPermissions,
   ADMIN: adminPermissions,
-  PURCHASER: ['dashboard:view', 'profile:view', 'purchase:view', 'purchase:edit', 'report:view', 'trace:view'],
-  SELLER: ['dashboard:view', 'profile:view', 'sale:view', 'sale:edit', 'report:view', 'trace:view'],
-  KEEPER: ['dashboard:view', 'profile:view', 'inventory:view', 'inventory:edit', 'report:view', 'trace:view']
+  PURCHASER: ['dashboard:view', 'profile:view', 'message:view', 'purchase:view', 'purchase:edit', 'report:view', 'trace:view'],
+  SELLER: ['dashboard:view', 'profile:view', 'message:view', 'sale:view', 'sale:edit', 'bulletin:view', 'report:view', 'trace:view'],
+  KEEPER: ['dashboard:view', 'profile:view', 'message:view', 'inventory:view', 'inventory:edit', 'report:view', 'trace:view']
 }
 
 const backendToFrontendPermissionMap: Record<string, string[]> = {
@@ -35,14 +37,29 @@ const backendToFrontendPermissionMap: Record<string, string[]> = {
   'system:user:edit': ['admin:account:view'],
   'system:role:edit': ['admin:role:view'],
   'system:config:edit': ['admin:config:view'],
-  'purchase:order:edit': ['purchase:view', 'purchase:edit'],
-  'purchase:inbound': ['purchase:edit'],
-  'sales:order:edit': ['sale:view', 'sale:edit'],
+  'purchase:view': ['purchase:view'],
+  'purchase:create': ['purchase:view', 'purchase:edit'],
+  'purchase:cancel': ['purchase:edit'],
+  'purchase:import': ['purchase:edit'],
+  'purchase:inbound': ['purchase:edit', 'inventory:edit'],
+  'sales:view': ['sale:view'],
+  'sales:create': ['sale:view', 'sale:edit'],
+  'sales:cancel': ['sale:edit'],
+  'sales:import': ['sale:edit'],
+  'sales:outbound': ['sale:edit', 'inventory:edit'],
   'sales:payment': ['sale:edit'],
+  'inventory:view': ['inventory:view'],
   'inventory:manage': ['inventory:view', 'inventory:edit'],
+  'inventory:transfer': ['inventory:edit'],
+  'inventory:check': ['inventory:edit'],
+  'inventory:import': ['inventory:edit'],
   'report:view': ['report:view'],
+  'trace:view': ['trace:view'],
   'logs:view': ['admin:log:view'],
-  'message:view': ['dashboard:view'],
+  'message:view': ['message:view'],
+  'bulletin:view': ['bulletin:view'],
+  'bulletin:create': ['bulletin:view'],
+  'audit:view': ['audit:view'],
   '*:*': ['*:*']
 }
 
@@ -80,6 +97,9 @@ export const resolvePermissions = (profile: UserProfile = {}): string[] => {
 
   if (normalized.has('report:view')) {
     normalized.add('trace:view')
+  }
+  if (normalized.has('sale:edit')) {
+    normalized.add('bulletin:view')
   }
   if (resolveRoleCode(profile) === 'SUPER_ADMIN') {
     normalized.add('audit:view')

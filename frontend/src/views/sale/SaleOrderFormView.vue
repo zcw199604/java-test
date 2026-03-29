@@ -19,7 +19,7 @@
       <el-alert v-if="lowStockWarning" type="error" :closable="false" show-icon title="当前库存低于安全阈值，请谨慎提交销售订单" />
       <div class="dialog-footer">
         <el-button @click="router.back()">取消</el-button>
-        <el-button v-permission="'sale:edit'" type="primary" @click="handleSubmit">保存订单</el-button>
+        <el-button v-permission="'sale:edit'" type="primary" :loading="submitting" @click="handleSubmit">{{ isEdit ? '保存并重新提交审核' : '保存订单' }}</el-button>
       </div>
     </PageSection>
   </div>
@@ -33,25 +33,50 @@ import PageSection from '../../components/PageSection.vue'
 import { fetchProducts } from '../../api/catalog'
 import { fetchCustomers } from '../../api/customer'
 import { fetchInventories } from '../../api/inventory'
-import { createSales } from '../../api/sales'
+import { createSales, fetchSalesDetail, updateSales } from '../../api/sales'
 
 const route = useRoute()
 const router = useRouter()
 const isEdit = computed(() => Boolean(route.params.id))
+const submitting = ref(false)
 const products = ref([])
 const customers = ref([])
 const inventories = ref([])
-const form = reactive({ customerId: 1, productId: 1, quantity: 5, unitPrice: 480 })
+const form = reactive({ customerId: undefined, productId: undefined, quantity: 5, unitPrice: 480 })
 
 const lowStockWarning = computed(() => {
   const current = inventories.value.find((item) => item.productId === form.productId || item.productName === products.value.find((p) => p.id === form.productId)?.name)
   return current && Number(current.quantity) <= Number(current.warningThreshold)
 })
 
+const loadDetail = async () => {
+  if (!isEdit.value) return
+  const result = await fetchSalesDetail(route.params.id).catch(() => ({ data: null }))
+  const data = result.data || {}
+  form.customerId = data.customerId
+  form.productId = data.productId
+  form.quantity = Number(data.quantity || 1)
+  form.unitPrice = Number(data.unitPrice || 0)
+}
+
 const handleSubmit = async () => {
-  await createSales({ ...form })
-  ElMessage.success(isEdit.value ? '销售单已重新保存' : '销售单已创建')
-  router.push('/sale/order')
+  if (!form.customerId || !form.productId) {
+    ElMessage.warning('请选择客户和商品')
+    return
+  }
+  submitting.value = true
+  try {
+    if (isEdit.value) {
+      await updateSales(route.params.id, { ...form })
+      ElMessage.success('销售单已重新保存并回到待审核状态')
+    } else {
+      await createSales({ ...form })
+      ElMessage.success('销售单已创建')
+    }
+    router.push('/sale/order')
+  } finally {
+    submitting.value = false
+  }
 }
 
 onMounted(async () => {
@@ -63,5 +88,6 @@ onMounted(async () => {
   products.value = productResult.data || []
   customers.value = customerResult.data || []
   inventories.value = inventoryResult.data || []
+  await loadDetail()
 })
 </script>

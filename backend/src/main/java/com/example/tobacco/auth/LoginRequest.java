@@ -1,5 +1,7 @@
 package com.example.tobacco.auth;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+
 import javax.validation.constraints.NotBlank;
 
 public class LoginRequest {
@@ -7,7 +9,9 @@ public class LoginRequest {
     private String username;
     @NotBlank(message = "密码不能为空")
     private String password;
+    @JsonAlias({"captchaUuid", "uuid", "key"})
     private String captchaKey;
+    @JsonAlias({"code", "captcha"})
     private String captchaCode;
 
     public String getUsername() { return username; }

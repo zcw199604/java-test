@@ -13,3 +13,8 @@
 - `POST /api/purchases/{id}/audit` 会写入 `audited_by`、`audited_at`、`audit_remark`；`POST /api/purchases/{id}/cancel` 会写入 `cancel_reason`。
 - `POST /api/purchases/import` 走 Excel 批量导入，限制单文件 `<=5MB`、单次 `<=1000` 行。
 - 创建、审核、取消、到货、入库均会写入 `purchase_order_tracks` 与 `trace_records`；入库后会触发库存预警检查与站内消息推送。
+
+
+## 本次更新（2026-03-28）
+- 采购订单支持通过详情接口加载原始数据后进行编辑。
+- 编辑后的采购单会回到待审核状态，以保持审批链路一致。

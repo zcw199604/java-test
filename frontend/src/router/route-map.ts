@@ -12,7 +12,13 @@ export const constantChildren: RouteRecordRaw[] = [
     path: '/profile',
     name: 'profile',
     component: () => import('../views/profile/ProfileView.vue'),
-    meta: { title: '个人中心', description: '维护个人资料与查看权限范围。', icon: 'User', group: 'workspace', permission: 'profile:view' }
+    meta: { title: '个人中心', description: '维护个人资料、修改密码并查看权限范围。', icon: 'User', group: 'workspace', permission: 'profile:view' }
+  },
+  {
+    path: '/messages',
+    name: 'messages',
+    component: () => import('../views/message/MessageCenterView.vue'),
+    meta: { title: '消息中心', description: '集中查看系统通知、库存预警与业务提醒。', icon: 'Bell', group: 'workspace', permission: 'message:view' }
   },
   {
     path: '/403',
@@ -59,6 +65,18 @@ export const asyncChildren: RouteRecordRaw[] = [
     meta: { title: '供应商管理', description: '维护供应商基础资料、联系人与状态。', icon: 'Van', group: 'admin', permission: 'admin:base:view' }
   },
   {
+    path: '/customer/list',
+    name: 'customer-list',
+    component: () => import('../views/customer/CustomerListView.vue'),
+    meta: { title: '客户管理', description: '维护客户档案、联系人与启停用状态。', icon: 'User', group: 'admin', permission: 'admin:base:view' }
+  },
+  {
+    path: '/warehouse/list',
+    name: 'warehouse-list',
+    component: () => import('../views/admin/WarehouseListView.vue'),
+    meta: { title: '仓库管理', description: '维护仓库名称、地址与启停用状态。', icon: 'OfficeBuilding', group: 'admin', permission: 'admin:base:view' }
+  },
+  {
     path: '/admin/log',
     name: 'admin-log',
     component: () => import('../views/admin/LogListView.vue'),
@@ -86,7 +104,7 @@ export const asyncChildren: RouteRecordRaw[] = [
     path: '/purchase/order/:id/edit',
     name: 'purchase-order-edit',
     component: () => import('../views/purchase/PurchaseOrderFormView.vue'),
-    meta: { title: '编辑采购单', description: '调整采购订单并重新提交。', hideInMenu: true, permission: 'purchase:edit' }
+    meta: { title: '编辑采购单', description: '读取真实采购详情并兼容更新提交流程。', hideInMenu: true, permission: 'purchase:edit' }
   },
   {
     path: '/purchase/inbound',
@@ -116,7 +134,7 @@ export const asyncChildren: RouteRecordRaw[] = [
     path: '/sale/order/:id/edit',
     name: 'sale-order-edit',
     component: () => import('../views/sale/SaleOrderFormView.vue'),
-    meta: { title: '编辑销售单', description: '编辑销售订单并重新确认。', hideInMenu: true, permission: 'sale:edit' }
+    meta: { title: '编辑销售单', description: '读取真实销售详情并兼容更新提交流程。', hideInMenu: true, permission: 'sale:edit' }
   },
   {
     path: '/sale/outbound',
@@ -140,7 +158,7 @@ export const asyncChildren: RouteRecordRaw[] = [
     path: '/inventory/list',
     name: 'inventory-list',
     component: () => import('../views/inventory/InventoryListView.vue'),
-    meta: { title: '库存总览', description: '查看实时库存与预警阈值。', icon: 'Box', group: 'inventory', permission: 'inventory:view' }
+    meta: { title: '库存总览', description: '查看实时库存、风险预警与近期变动。', icon: 'Box', group: 'inventory', permission: 'inventory:view' }
   },
   {
     path: '/inventory/flow',

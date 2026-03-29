@@ -32,9 +32,7 @@ public class AuthInterceptor implements HandlerInterceptor {
             return unauthorized(response, "未登录或令牌缺失");
         }
         String token = auth.substring(7);
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "select session_token as token, user_id as userId, username, role_code as roleCode, expire_at as expireAt, status from user_sessions where session_token=? order by id desc limit 1",
-                token);
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(buildSessionQuery(), token);
         if (rows.isEmpty()) {
             return unauthorized(response, "登录已过期或令牌无效");
         }
@@ -43,12 +41,62 @@ public class AuthInterceptor implements HandlerInterceptor {
         if (!"ACTIVE".equals(String.valueOf(row.get("status"))) || expireAt == null || expireAt.isBefore(LocalDateTime.now())) {
             return unauthorized(response, "登录已过期或令牌无效");
         }
-        jdbcTemplate.update("update user_sessions set last_access_at=now() where session_token=?", token);
+        if (columnExists("user_sessions", "last_access_at")) {
+            jdbcTemplate.update("update user_sessions set last_access_at=now() where " + userSessionTokenColumn() + "=?", token);
+        }
+        String username = hasText(stringValue(row.get("sessionUsername"))) ? stringValue(row.get("sessionUsername")) : stringValue(row.get("username"));
+        String roleCode = hasText(stringValue(row.get("sessionRoleCode"))) ? stringValue(row.get("sessionRoleCode")) : stringValue(row.get("userRoleCode"));
         request.setAttribute("token", token);
         request.setAttribute("userId", ((Number) row.get("userId")).longValue());
-        request.setAttribute("username", String.valueOf(row.get("username")));
-        request.setAttribute("roleCode", String.valueOf(row.get("roleCode")));
+        request.setAttribute("username", username);
+        request.setAttribute("roleCode", roleCode);
         return true;
+    }
+
+    private String buildSessionQuery() {
+        StringBuilder sql = new StringBuilder();
+        sql.append("select us.user_id as userId, ");
+        if (columnExists("user_sessions", "username")) {
+            sql.append("us.username as sessionUsername, ");
+        } else {
+            sql.append("null as sessionUsername, ");
+        }
+        if (columnExists("user_sessions", "role_code")) {
+            sql.append("us.role_code as sessionRoleCode, ");
+        } else {
+            sql.append("null as sessionRoleCode, ");
+        }
+        sql.append("u.username, u.role_code as userRoleCode, us.")
+                .append(userSessionExpireColumn())
+                .append(" as expireAt, us.status from user_sessions us left join users u on us.user_id = u.id where us.")
+                .append(userSessionTokenColumn())
+                .append("=? order by us.id desc limit 1");
+        return sql.toString();
+    }
+
+    private String userSessionTokenColumn() {
+        return columnExists("user_sessions", "session_token") ? "session_token" : "token";
+    }
+
+    private String userSessionExpireColumn() {
+        return columnExists("user_sessions", "expire_at") ? "expire_at" : "expired_at";
+    }
+
+    private boolean columnExists(String tableName, String columnName) {
+        Integer count = jdbcTemplate.queryForObject(
+                "select count(*) from information_schema.columns where table_schema = database() and table_name = ? and column_name = ?",
+                Integer.class,
+                tableName,
+                columnName);
+        return count != null && count > 0;
+    }
+
+    private boolean hasText(String value) {
+        return value != null && value.trim().length() > 0;
+    }
+
+    private String stringValue(Object value) {
+        return value == null ? "" : String.valueOf(value);
     }
 
     private LocalDateTime toLocalDateTime(Object value) {

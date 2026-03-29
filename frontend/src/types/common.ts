@@ -1,4 +1,5 @@
 export interface UserProfile {
+  id?: number | string
   username?: string
   realName?: string
   roleName?: string
@@ -6,6 +7,7 @@ export interface UserProfile {
   roleCode?: string
   role_code?: string
   role?: string
+  status?: string
   permissions?: string[]
 }
 
@@ -14,6 +16,9 @@ export interface NotificationItem {
   title: string
   content: string
   type?: string
+  bizType?: string
+  bizId?: string | number
+  createdAt?: string
   read?: boolean
 }
 

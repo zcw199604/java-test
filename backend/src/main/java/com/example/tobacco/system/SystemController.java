@@ -96,11 +96,30 @@ public class SystemController {
     }
 
     @GetMapping("/warehouses")
-    public ApiResponse<List<Map<String, Object>>> warehouses() { return ApiResponse.success(systemService.warehouses()); }
+    public ApiResponse<List<Map<String, Object>>> warehouses(@RequestParam(required = false) String keyword, @RequestParam(required = false) String status) {
+        return ApiResponse.success(systemService.warehouses(keyword, status));
+    }
+
+    @GetMapping("/warehouses/{id}")
+    public ApiResponse<Map<String, Object>> warehouseDetail(@PathVariable Long id) {
+        return ApiResponse.success(systemService.warehouseDetail(id));
+    }
 
     @PostMapping("/warehouses")
     public ApiResponse<String> createWarehouse(@RequestBody Map<String, String> request, @RequestAttribute("userId") Long userId, @RequestAttribute("username") String username) {
         systemService.createWarehouse(request, userId, username);
+        return ApiResponse.success("ok");
+    }
+
+    @PutMapping("/warehouses/{id}")
+    public ApiResponse<String> updateWarehouse(@PathVariable Long id, @RequestBody Map<String, String> request, @RequestAttribute("userId") Long userId, @RequestAttribute("username") String username) {
+        systemService.updateWarehouse(id, request, userId, username);
+        return ApiResponse.success("ok");
+    }
+
+    @PutMapping("/warehouses/{id}/status")
+    public ApiResponse<String> updateWarehouseStatus(@PathVariable Long id, @RequestBody Map<String, String> request, @RequestAttribute("userId") Long userId, @RequestAttribute("username") String username) {
+        systemService.updateWarehouseStatus(id, request.getOrDefault("status", "ENABLED"), userId, username);
         return ApiResponse.success("ok");
     }
 }

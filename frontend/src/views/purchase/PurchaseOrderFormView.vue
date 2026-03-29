@@ -22,7 +22,7 @@
       </el-form>
       <div class="dialog-footer">
         <el-button @click="router.back()">取消</el-button>
-        <el-button v-permission="'purchase:edit'" type="primary" @click="handleSubmit">提交审核</el-button>
+        <el-button v-permission="'purchase:edit'" type="primary" :loading="submitting" @click="handleSubmit">{{ isEdit ? '保存并重新提交审核' : '提交审核' }}</el-button>
       </div>
     </PageSection>
   </div>
@@ -35,19 +35,44 @@ import { ElMessage } from 'element-plus'
 import PageSection from '../../components/PageSection.vue'
 import { fetchProducts } from '../../api/catalog'
 import { fetchSuppliers } from '../../api/supplier'
-import { createPurchase } from '../../api/purchase'
+import { createPurchase, fetchPurchaseDetail, updatePurchase } from '../../api/purchase'
 
 const route = useRoute()
 const router = useRouter()
 const isEdit = computed(() => Boolean(route.params.id))
+const submitting = ref(false)
 const products = ref([])
 const suppliers = ref([])
-const form = reactive({ supplierId: 1, productId: 1, quantity: 10, unitPrice: 520 })
+const form = reactive({ supplierId: undefined, productId: undefined, quantity: 10, unitPrice: 520 })
+
+const loadDetail = async () => {
+  if (!isEdit.value) return
+  const result = await fetchPurchaseDetail(route.params.id).catch(() => ({ data: null }))
+  const data = result.data || {}
+  form.supplierId = data.supplierId
+  form.productId = data.productId
+  form.quantity = Number(data.quantity || 1)
+  form.unitPrice = Number(data.unitPrice || 0)
+}
 
 const handleSubmit = async () => {
-  await createPurchase({ ...form })
-  ElMessage.success(isEdit.value ? '采购单已按新配置重新提交审核' : '采购单已提交审核')
-  router.push('/purchase/order')
+  if (!form.supplierId || !form.productId) {
+    ElMessage.warning('请选择供应商和商品')
+    return
+  }
+  submitting.value = true
+  try {
+    if (isEdit.value) {
+      await updatePurchase(route.params.id, { ...form })
+      ElMessage.success('采购单已按新配置重新提交审核')
+    } else {
+      await createPurchase({ ...form })
+      ElMessage.success('采购单已提交审核')
+    }
+    router.push('/purchase/order')
+  } finally {
+    submitting.value = false
+  }
 }
 
 onMounted(async () => {
@@ -57,5 +82,6 @@ onMounted(async () => {
   ])
   products.value = productResult.data || []
   suppliers.value = supplierResult.data || []
+  await loadDetail()
 })
 </script>

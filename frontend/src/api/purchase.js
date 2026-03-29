@@ -1,7 +1,9 @@
 import http from './http'
 
 export const fetchPurchases = () => http.get('/purchases')
+export const fetchPurchaseDetail = (id) => http.get(`/purchases/${id}`)
 export const createPurchase = (payload) => http.post('/purchases', payload)
+export const updatePurchase = (id, payload) => http.put(`/purchases/${id}`, payload)
 export const receivePurchase = (id) => http.post(`/purchases/${id}/receive`)
 export const inboundPurchase = (id) => http.post(`/purchases/${id}/inbound`)
 export const auditPurchase = (id, data) => http.post(`/purchases/${id}/audit`, data)

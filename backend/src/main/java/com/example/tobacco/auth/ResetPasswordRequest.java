@@ -1,10 +1,12 @@
 package com.example.tobacco.auth;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+
 import javax.validation.constraints.NotBlank;
 
 public class ResetPasswordRequest {
     @NotBlank private String username;
-    @NotBlank private String resetToken;
+    @NotBlank @JsonAlias({"token"}) private String resetToken;
     @NotBlank private String newPassword;
 
     public String getUsername() { return username; }

@@ -9,6 +9,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -196,18 +197,78 @@ public class SystemService {
         auditService.logOperation(operatorId, username, "SYSTEM", "CHANGE_PASSWORD", "USER", operatorId, "修改个人密码");
     }
 
-    public List<Map<String, Object>> warehouses() {
-        List<Map<String, Object>> warehouses = jdbcTemplate.queryForList("select id, name, address, status from warehouses order by id");
+    public List<Map<String, Object>> warehouses(String keyword, String status) {
+        String codeSelect = warehouseHasCodeColumn() ? "code, " : "";
+        StringBuilder sql = new StringBuilder("select id, " + codeSelect + "name, address, status from warehouses where 1=1");
+        List<Object> params = new ArrayList<Object>();
+        if (hasText(keyword)) {
+            sql.append(" and (name like ? or address like ?)");
+            String keywordValue = "%" + keyword.trim() + "%";
+            params.add(keywordValue);
+            params.add(keywordValue);
+        }
+        if (hasText(status)) {
+            sql.append(" and status=?");
+            params.add(status.trim());
+        }
+        sql.append(" order by id");
+        List<Map<String, Object>> warehouses = jdbcTemplate.queryForList(sql.toString(), params.toArray());
         for (Map<String, Object> warehouse : warehouses) {
-            warehouse.put("code", warehouse.get("id"));
+            if (warehouse.get("code") == null) {
+                warehouse.put("code", warehouse.get("id"));
+            }
         }
         return warehouses;
     }
 
+    public Map<String, Object> warehouseDetail(Long id) {
+        String codeSelect = warehouseHasCodeColumn() ? "code, " : "";
+        Map<String, Object> detail = jdbcTemplate.queryForMap("select id, " + codeSelect + "name, address, status from warehouses where id=?", id);
+        if (detail.get("code") == null) {
+            detail.put("code", detail.get("id"));
+        }
+        return detail;
+    }
+
     public void createWarehouse(Map<String, String> request, Long operatorId, String operatorName) {
-        jdbcTemplate.update("insert into warehouses(name,address,status) values(?,?,?)",
-                request.get("name"), request.get("address"), request.getOrDefault("status", "ENABLED"));
-        auditService.logOperation(operatorId, operatorName, "SYSTEM", "CREATE_WAREHOUSE", "WAREHOUSE", null, request.get("name"));
+        String name = normalizeText(required(request.get("name"), "仓库名称不能为空"));
+        String status = valueOrDefault(request.get("status"), "ENABLED");
+        String address = normalizeText(request.get("address"));
+        if (warehouseHasCodeColumn()) {
+            jdbcTemplate.update("insert into warehouses(code,name,address,status) values(?,?,?,?)",
+                    generateWarehouseCode(), name, address, status);
+        } else {
+            jdbcTemplate.update("insert into warehouses(name,address,status) values(?,?,?)",
+                    name, address, status);
+        }
+        auditService.logOperation(operatorId, operatorName, "SYSTEM", "CREATE_WAREHOUSE", "WAREHOUSE", null, name);
+    }
+
+    public void updateWarehouse(Long id, Map<String, String> request, Long operatorId, String operatorName) {
+        Map<String, Object> existing = warehouseDetail(id);
+        jdbcTemplate.update("update warehouses set name=?, address=?, status=? where id=?",
+                normalizeText(valueOrDefault(request.get("name"), String.valueOf(existing.get("name")))),
+                normalizeText(valueOrDefault(request.get("address"), stringValue(existing.get("address")))),
+                valueOrDefault(request.get("status"), String.valueOf(existing.get("status"))),
+                id);
+        auditService.logOperation(operatorId, operatorName, "SYSTEM", "UPDATE_WAREHOUSE", "WAREHOUSE", id, "更新仓库" + id);
+    }
+
+    public void updateWarehouseStatus(Long id, String status, Long operatorId, String operatorName) {
+        String targetStatus = hasText(status) ? status.trim() : "ENABLED";
+        jdbcTemplate.update("update warehouses set status=? where id=?", targetStatus, id);
+        auditService.logOperation(operatorId, operatorName, "SYSTEM", "UPDATE_WAREHOUSE_STATUS", "WAREHOUSE", id, "更新仓库状态为" + targetStatus);
+    }
+
+    private boolean warehouseHasCodeColumn() {
+        Integer count = jdbcTemplate.queryForObject(
+                "select count(*) from information_schema.columns where table_schema = database() and table_name = 'warehouses' and column_name = 'code'",
+                Integer.class);
+        return count != null && count > 0;
+    }
+
+    private String generateWarehouseCode() {
+        return "WH" + System.currentTimeMillis();
     }
 
     private void ensureManageUserPermission(String operatorRoleCode, String existingRoleCode, String actionName) {
@@ -247,6 +308,21 @@ public class SystemService {
 
     private String valueOrDefault(String value, String defaultValue) {
         return hasText(value) ? value.trim() : defaultValue;
+    }
+
+    private String normalizeText(String value) {
+        if (!hasText(value)) {
+            return value;
+        }
+        String trimmed = value.trim();
+        if (!trimmed.matches(".*[\u00C0-\u00FF].*")) {
+            return trimmed;
+        }
+        try {
+            return new String(trimmed.getBytes(StandardCharsets.ISO_8859_1), StandardCharsets.UTF_8);
+        } catch (Exception ex) {
+            return trimmed;
+        }
     }
 
     private String stringValue(Object value) {

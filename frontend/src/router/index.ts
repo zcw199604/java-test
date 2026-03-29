@@ -5,12 +5,14 @@ import { fetchProfile } from '../api/auth'
 import { clearToken, getToken } from '../api/http'
 import { allAllowedChildren, filterAsyncChildren, rootRoute } from './route-map'
 import LoginView from '../views/auth/LoginView.vue'
+import ResetPasswordView from '../views/auth/ResetPasswordView.vue'
 import { hasPermission } from '../utils/access'
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/login', name: 'login', component: LoginView, meta: { public: true, title: '登录' } },
+    { path: '/reset-password', name: 'reset-password', component: ResetPasswordView, meta: { public: true, title: '重置密码' } },
     rootRoute,
     { path: '/:pathMatch(.*)*', redirect: '/dashboard' }
   ]
@@ -47,7 +49,7 @@ router.beforeEach(async (to) => {
       appStore.bootstrapProfile((result.data || {}) as Record<string, unknown>)
       installAsyncRoutes(appStore)
       return to.name ? true : to.fullPath
-    } catch (error) {
+    } catch {
       clearToken()
       appStore.clearProfile()
       return { path: '/login', query: { redirect: to.fullPath } }

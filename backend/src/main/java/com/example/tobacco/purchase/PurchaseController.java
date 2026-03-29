@@ -27,9 +27,29 @@ public class PurchaseController {
         return ApiResponse.success(purchaseService.list());
     }
 
+    @GetMapping("/requisitions")
+    public ApiResponse<List<PurchaseOrderItem>> requisitions() {
+        return ApiResponse.success(purchaseService.list());
+    }
+
+    @GetMapping("/{id}")
+    public ApiResponse<PurchaseOrderItem> detail(@PathVariable Long id) {
+        return ApiResponse.success(purchaseService.detail(id));
+    }
+
+    @GetMapping("/{id}/trace")
+    public ApiResponse<List<Map<String, Object>>> trace(@PathVariable Long id) {
+        return ApiResponse.success(purchaseService.trace(id));
+    }
+
     @PostMapping
     public ApiResponse<PurchaseOrderItem> create(@Validated @RequestBody CreatePurchaseRequest request, HttpServletRequest httpRequest) {
         return ApiResponse.success(purchaseService.create(request, String.valueOf(httpRequest.getAttribute("username"))));
+    }
+
+    @PutMapping("/{id}")
+    public ApiResponse<PurchaseOrderItem> update(@PathVariable Long id, @Validated @RequestBody CreatePurchaseRequest request, HttpServletRequest httpRequest) {
+        return ApiResponse.success(purchaseService.update(id, request, String.valueOf(httpRequest.getAttribute("username")), String.valueOf(httpRequest.getAttribute("roleCode"))));
     }
 
     @PostMapping("/{id}/audit")

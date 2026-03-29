@@ -7,6 +7,7 @@ import com.example.tobacco.dto.DashboardSummaryDto;
 import com.example.tobacco.mapper.dashboard.DashboardMapper;
 import com.example.tobacco.model.DashboardSalesHistoryRow;
 import com.example.tobacco.model.DashboardSalesTopItem;
+import org.apache.poi.util.StringUtil;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -92,7 +93,7 @@ public class DashboardService {
     }
 
     private String normalizeMetric(String metric) {
-        if (metric == null || metric.isBlank() || "quantity".equalsIgnoreCase(metric)) {
+        if (metric == null || StringUtil.isBlank(metric) || "quantity".equalsIgnoreCase(metric)) {
             return "quantity";
         }
         if ("amount".equalsIgnoreCase(metric)) {

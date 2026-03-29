@@ -137,12 +137,6 @@ export const asyncChildren: RouteRecordRaw[] = [
     meta: { title: '编辑销售单', description: '读取真实销售详情并兼容更新提交流程。', hideInMenu: true, permission: 'sale:edit' }
   },
   {
-    path: '/sale/outbound',
-    name: 'sale-outbound',
-    component: () => import('../views/sale/SaleOutboundView.vue'),
-    meta: { title: '销售出库', description: '处理待出库销售单。', icon: 'Upload', group: 'sale', permission: ['sale:edit', 'inventory:edit'] }
-  },
-  {
     path: '/sale/performance',
     name: 'sale-performance',
     component: () => import('../views/sale/SalePerformanceView.vue'),

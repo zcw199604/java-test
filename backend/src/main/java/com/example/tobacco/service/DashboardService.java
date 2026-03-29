@@ -1,14 +1,29 @@
 package com.example.tobacco.service;
 
 import com.example.tobacco.dto.DashboardModuleDto;
+import com.example.tobacco.dto.DashboardSalesHistoryDto;
+import com.example.tobacco.dto.DashboardSalesSeriesDto;
 import com.example.tobacco.dto.DashboardSummaryDto;
 import com.example.tobacco.mapper.dashboard.DashboardMapper;
+import com.example.tobacco.model.DashboardSalesHistoryRow;
+import com.example.tobacco.model.DashboardSalesTopItem;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class DashboardService {
+
+    private static final List<Integer> SUPPORTED_DAYS = Arrays.asList(7, 30);
+    private static final int DEFAULT_LIMIT = 6;
+    private static final int MAX_LIMIT = 10;
 
     private final DashboardMapper dashboardMapper;
 
@@ -34,5 +49,87 @@ public class DashboardService {
                 new DashboardModuleDto("report", "报表中心", "采购、销售、库存汇总与趋势分析", "/report/center")
         ));
         return summary;
+    }
+
+    public DashboardSalesHistoryDto getSalesHistory(String metric, Integer days, Integer limit) {
+        String normalizedMetric = normalizeMetric(metric);
+        int normalizedDays = normalizeDays(days);
+        int normalizedLimit = normalizeLimit(limit);
+        LocalDate endDate = LocalDate.now();
+        LocalDate startDate = endDate.minusDays(normalizedDays - 1L);
+        List<String> periods = buildPeriods(startDate, endDate);
+        List<DashboardSalesTopItem> topItems = dashboardMapper.selectTopSalesProducts(startDate.toString(), endDate.toString(), normalizedMetric, normalizedLimit);
+
+        DashboardSalesHistoryDto result = new DashboardSalesHistoryDto();
+        result.setMetric(normalizedMetric);
+        result.setPeriods(periods);
+        if (topItems == null || topItems.isEmpty()) {
+            result.setSeries(new ArrayList<>());
+            return result;
+        }
+
+        List<Long> productIds = topItems.stream().map(DashboardSalesTopItem::getProductId).collect(Collectors.toList());
+        List<DashboardSalesHistoryRow> rows = dashboardMapper.selectSalesHistory(startDate.toString(), endDate.toString(), normalizedMetric, productIds);
+        Map<Long, Map<String, BigDecimal>> valueMap = new LinkedHashMap<>();
+        for (DashboardSalesHistoryRow row : rows) {
+            valueMap.computeIfAbsent(row.getProductId(), key -> new LinkedHashMap<>()).put(row.getPeriod(), defaultDecimal(row.getMetricValue()));
+        }
+
+        List<DashboardSalesSeriesDto> series = new ArrayList<>();
+        for (DashboardSalesTopItem item : topItems) {
+            DashboardSalesSeriesDto seriesDto = new DashboardSalesSeriesDto();
+            seriesDto.setProductId(item.getProductId());
+            seriesDto.setProductName(item.getProductName());
+            Map<String, BigDecimal> productValues = valueMap.getOrDefault(item.getProductId(), new LinkedHashMap<>());
+            List<BigDecimal> values = periods.stream()
+                    .map(period -> defaultDecimal(productValues.get(period)))
+                    .collect(Collectors.toList());
+            seriesDto.setValues(values);
+            series.add(seriesDto);
+        }
+        result.setSeries(series);
+        return result;
+    }
+
+    private String normalizeMetric(String metric) {
+        if (metric == null || metric.isBlank() || "quantity".equalsIgnoreCase(metric)) {
+            return "quantity";
+        }
+        if ("amount".equalsIgnoreCase(metric)) {
+            return "amount";
+        }
+        throw new IllegalArgumentException("metric 仅支持 quantity 或 amount");
+    }
+
+    private int normalizeDays(Integer days) {
+        if (days == null) {
+            return 7;
+        }
+        if (!SUPPORTED_DAYS.contains(days)) {
+            throw new IllegalArgumentException("days 仅支持 7 或 30");
+        }
+        return days;
+    }
+
+    private int normalizeLimit(Integer limit) {
+        if (limit == null) {
+            return DEFAULT_LIMIT;
+        }
+        if (limit < 1 || limit > MAX_LIMIT) {
+            throw new IllegalArgumentException("limit 仅支持 1 到 10");
+        }
+        return limit;
+    }
+
+    private List<String> buildPeriods(LocalDate startDate, LocalDate endDate) {
+        List<String> periods = new ArrayList<>();
+        for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+            periods.add(date.toString());
+        }
+        return periods;
+    }
+
+    private BigDecimal defaultDecimal(BigDecimal value) {
+        return value == null ? BigDecimal.ZERO : value;
     }
 }

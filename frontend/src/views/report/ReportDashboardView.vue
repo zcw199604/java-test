@@ -17,7 +17,6 @@
       </PageSection>
       <PageSection title="库存构成" description="按库存量快速定位重点商品。"><AppChart :option="barOption" /></PageSection>
       <PageSection title="采销存联动" description="按品类查看采购额与销售额联动关系。"><AppChart :option="linkageOption" /></PageSection>
-      <PageSection title="导出预览" description="直观查看导出接口当前说明。"><pre class="csv-preview">{{ exportPreview }}</pre></PageSection>
     </div>
   </div>
 </template>
@@ -27,13 +26,12 @@ import { computed, onMounted, ref } from 'vue'
 import PageSection from '../../components/PageSection.vue'
 import KpiCard from '../../components/KpiCard.vue'
 import AppChart from '../../components/AppChart.vue'
-import { fetchExportData, exportReport, fetchInventorySummary, fetchLinkage, fetchPsiSummary, fetchTrend } from '../../api/report'
+import { exportReport, fetchInventorySummary, fetchLinkage, fetchPsiSummary, fetchTrend } from '../../api/report'
 import { fetchInventories } from '../../api/inventory'
 
 const psiSummary = ref({ purchase: {}, sales: {}, inventory: {}, receivableAmount: 0 })
 const inventoryRows = ref([])
 const trendRows = ref([])
-const exportPreview = ref('')
 const linkageRows = ref([])
 const warningRows = ref([])
 
@@ -66,17 +64,15 @@ const linkageOption = computed(() => ({
 const handleExport = async () => exportReport()
 
 onMounted(async () => {
-  const [psi, trend, exportText, inventories, linkage] = await Promise.all([
+  const [psi, trend, inventories, linkage] = await Promise.all([
     fetchPsiSummary().catch(() => ({ data: {} })),
     fetchTrend().catch(() => ({ data: [] })),
-    fetchExportData().catch(() => ({ data: '' })),
     fetchInventories().catch(() => ({ data: [] })),
     fetchLinkage().catch(() => ({ data: {} })),
     fetchInventorySummary().catch(() => ({ data: {} }))
   ])
   psiSummary.value = psi.data || psiSummary.value
   trendRows.value = trend.data || []
-  exportPreview.value = exportText.data || ''
   inventoryRows.value = inventories.data || []
   linkageRows.value = linkage.data?.categoryPurchaseSales || []
   warningRows.value = linkage.data?.inventoryWarnings || []

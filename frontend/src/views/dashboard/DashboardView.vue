@@ -10,8 +10,25 @@
     <el-alert v-if="loadError" :title="loadError" type="warning" show-icon :closable="false" />
 
     <div class="two-column-grid">
-      <PageSection title="采销存趋势" description="采购、库存、销售三条业务曲线联动查看。">
-        <AppChart :option="trendOption" :loading="loading" />
+      <PageSection title="历史烟品销售对比" :description="salesHistoryDescription">
+        <template #actions>
+          <div class="dashboard-toolbar">
+            <el-radio-group :model-value="salesMetric" size="small" @change="handleMetricChange">
+              <el-radio-button label="quantity">销售数量</el-radio-button>
+              <el-radio-button label="amount">销售金额</el-radio-button>
+            </el-radio-group>
+            <el-radio-group :model-value="salesDays" size="small" @change="handleDaysChange">
+              <el-radio-button :label="7">近7天</el-radio-button>
+              <el-radio-button :label="30">近30天</el-radio-button>
+            </el-radio-group>
+          </div>
+        </template>
+        <el-skeleton :loading="salesHistoryLoading" animated>
+          <template #default>
+            <el-empty v-if="!salesHistory.series.length" description="最近周期暂无历史销售数据" />
+            <AppChart v-else :option="salesHistoryOption" :loading="salesHistoryLoading" />
+          </template>
+        </el-skeleton>
       </PageSection>
       <PageSection title="预警消息" description="库存阈值、流程堵点和异常提醒集中呈现。">
         <el-skeleton :loading="loading" animated :rows="4">
@@ -52,10 +69,10 @@ import PageSection from '../../components/PageSection.vue'
 import KpiCard from '../../components/KpiCard.vue'
 import AppChart from '../../components/AppChart.vue'
 import AppTable from '../../components/AppTable.vue'
-import { fetchDashboardSummary } from '../../api/dashboard'
+import { fetchDashboardSalesHistory, fetchDashboardSummary } from '../../api/dashboard'
 import { fetchInventoryWarnings } from '../../api/inventory'
 import { useAppStore } from '../../stores/app'
-import { formatNumber } from '../../utils/format'
+import { formatCurrency, formatNumber } from '../../utils/format'
 
 interface SummaryState {
   purchaseCount: number
@@ -72,12 +89,28 @@ interface WarningViewItem {
   time: string
 }
 
+interface SalesHistorySeries {
+  productId: number
+  productName: string
+  values: Array<number | string>
+}
+
+interface SalesHistoryState {
+  metric: 'quantity' | 'amount'
+  periods: string[]
+  series: SalesHistorySeries[]
+}
+
 const router = useRouter()
 const appStore = useAppStore()
 const loading = ref(true)
+const salesHistoryLoading = ref(false)
 const loadError = ref('')
+const salesMetric = ref<'quantity' | 'amount'>('quantity')
+const salesDays = ref<7 | 30>(7)
 const summary = reactive<SummaryState>({ purchaseCount: 0, inventoryCount: 0, salesCount: 0, warningCount: 0 })
 const warningList = ref<WarningViewItem[]>([])
+const salesHistory = reactive<SalesHistoryState>({ metric: 'quantity', periods: [], series: [] })
 const logRows = ref<Array<Record<string, unknown>>>([
   { operator: '系统管理员', action: '登录系统', module: '工作台', time: '2026-03-24 09:00:00' },
   { operator: '采购专员', action: '创建采购单', module: '采购管理', time: '2026-03-24 09:18:00' },
@@ -91,19 +124,46 @@ const logColumns: Array<{ key: string; label: string; minWidth?: number }> = [
 ]
 
 const visibleMenus = computed(() => appStore.menuGroups.flatMap((group) => group.children).slice(0, 6))
-
-const trendOption = computed<EChartsOption>(() => ({
-  tooltip: { trigger: 'axis' },
-  legend: { data: ['采购', '库存', '销售'] },
-  grid: { left: 24, right: 24, bottom: 24, containLabel: true },
-  xAxis: { type: 'category', data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'] },
-  yAxis: { type: 'value' },
-  series: [
-    { name: '采购', type: 'line', smooth: true, data: [12, 15, 18, 13, 20, 22, 17] },
-    { name: '库存', type: 'line', smooth: true, data: [68, 66, 64, 61, 60, 58, 55] },
-    { name: '销售', type: 'line', smooth: true, data: [8, 11, 14, 16, 15, 19, 21] }
-  ]
+const salesMetricLabel = computed(() => (salesMetric.value === 'amount' ? '销售金额' : '销售数量'))
+const salesHistoryDescription = computed(() => `展示近 ${salesDays.value} 天重点烟品${salesMetricLabel.value}变化，支持按真实销售订单动态对比。`)
+const salesHistoryOption = computed<EChartsOption>(() => ({
+  tooltip: {
+    trigger: 'axis',
+    valueFormatter: (value: unknown) => {
+      const numericValue = Number(Array.isArray(value) ? value[0] : value || 0)
+      return salesMetric.value === 'amount' ? formatCurrency(numericValue) : `${formatNumber(numericValue)} 条`
+    }
+  },
+  legend: { type: 'scroll', top: 0 },
+  grid: { left: 24, right: 24, bottom: 24, top: 56, containLabel: true },
+  xAxis: { type: 'category', data: salesHistory.periods },
+  yAxis: {
+    type: 'value',
+    axisLabel: {
+      formatter: (value: number) => (salesMetric.value === 'amount' ? formatNumber(value) : `${value}`)
+    }
+  },
+  series: salesHistory.series.map((item) => ({
+    name: item.productName,
+    type: 'line',
+    smooth: true,
+    showSymbol: false,
+    emphasis: { focus: 'series' },
+    data: item.values.map((value) => Number(value || 0))
+  }))
 }))
+
+const loadSalesHistory = async () => {
+  salesHistoryLoading.value = true
+  try {
+    const result = await fetchDashboardSalesHistory({ metric: salesMetric.value, days: salesDays.value, limit: 6 })
+    salesHistory.metric = (result.data?.metric || salesMetric.value) as 'quantity' | 'amount'
+    salesHistory.periods = result.data?.periods || []
+    salesHistory.series = (result.data?.series || []) as SalesHistorySeries[]
+  } finally {
+    salesHistoryLoading.value = false
+  }
+}
 
 const loadData = async () => {
   loading.value = true
@@ -111,7 +171,8 @@ const loadData = async () => {
   try {
     const [dashboardResult, warningResult] = await Promise.all([
       fetchDashboardSummary().catch(() => ({ data: {} })),
-      fetchInventoryWarnings().catch(() => ({ data: [] }))
+      fetchInventoryWarnings().catch(() => ({ data: [] })),
+      loadSalesHistory()
     ])
     Object.assign(summary, dashboardResult.data || {})
     warningList.value = (warningResult.data || []).map((item: Record<string, unknown>, index: number) => ({
@@ -129,5 +190,24 @@ const loadData = async () => {
   }
 }
 
+const handleMetricChange = async (value: 'quantity' | 'amount') => {
+  salesMetric.value = value
+  await loadSalesHistory()
+}
+
+const handleDaysChange = async (value: 7 | 30) => {
+  salesDays.value = value
+  await loadSalesHistory()
+}
+
 onMounted(loadData)
 </script>
+
+<style scoped>
+.dashboard-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+</style>

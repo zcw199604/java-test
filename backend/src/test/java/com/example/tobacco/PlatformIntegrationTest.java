@@ -33,7 +33,7 @@ class PlatformIntegrationTest {
     void shouldRunTaskbookAlignedBusinessFlow() throws Exception {
         MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\"admin\",\"password\":\"123456\"}"))
+                        .content("{\"username\":\"admin\",\"password\":\"033a4de787e4383ba6e204364b23ed5adca533e3c70b1f76ba53bac28796a5ac\"}"))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -234,10 +234,42 @@ class PlatformIntegrationTest {
                 .andExpect(result -> assertThat(objectMapper.readTree(result.getResponse().getContentAsString()).path("code").asInt()).isEqualTo(400));
     }
 
+    @Test
+    void shouldReturnDashboardSalesHistoryWithMetricSwitching() throws Exception {
+        String token = loginAsAdmin();
+
+        MvcResult quantityResult = mockMvc.perform(get("/api/dashboard/sales-history")
+                        .header("Authorization", bearer(token))
+                        .param("metric", "quantity")
+                        .param("days", "7")
+                        .param("limit", "5"))
+                .andExpect(status().isOk())
+                .andReturn();
+        JsonNode quantityJson = objectMapper.readTree(quantityResult.getResponse().getContentAsString()).path("data");
+        assertThat(quantityJson.path("metric").asText()).isEqualTo("quantity");
+        assertThat(quantityJson.path("periods").isArray()).isTrue();
+        assertThat(quantityJson.path("periods").size()).isEqualTo(7);
+        assertThat(quantityJson.path("series").isArray()).isTrue();
+        assertThat(quantityJson.path("series").size()).isGreaterThanOrEqualTo(1);
+        assertThat(quantityJson.path("series").get(0).path("productName").asText()).isNotBlank();
+        assertThat(quantityJson.path("series").get(0).path("values").size()).isEqualTo(7);
+
+        MvcResult amountResult = mockMvc.perform(get("/api/dashboard/sales-history")
+                        .header("Authorization", bearer(token))
+                        .param("metric", "amount")
+                        .param("days", "30"))
+                .andExpect(status().isOk())
+                .andReturn();
+        JsonNode amountJson = objectMapper.readTree(amountResult.getResponse().getContentAsString()).path("data");
+        assertThat(amountJson.path("metric").asText()).isEqualTo("amount");
+        assertThat(amountJson.path("periods").size()).isEqualTo(30);
+        assertThat(amountJson.path("series").isArray()).isTrue();
+    }
+
     private String loginAsAdmin() throws Exception {
         MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\"admin\",\"password\":\"123456\"}"))
+                        .content("{\"username\":\"admin\",\"password\":\"033a4de787e4383ba6e204364b23ed5adca533e3c70b1f76ba53bac28796a5ac\"}"))
                 .andExpect(status().isOk())
                 .andReturn();
         JsonNode loginJson = objectMapper.readTree(loginResult.getResponse().getContentAsString());

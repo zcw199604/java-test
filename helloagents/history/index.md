@@ -30,6 +30,8 @@
 | 202603290635 | order-approve-permission-fix | 修复 | ✅已完成 | [helloagents/history/2026-03/202603290635_order-approve-permission-fix](2026-03/202603290635_order-approve-permission-fix/) |
 | 202603290650 | frontend-role-log-zh-display | 修复 | ✅已完成 | [helloagents/history/2026-03/202603290650_frontend-role-log-zh-display](2026-03/202603290650_frontend-role-log-zh-display/) |
 | 202603290652 | warehouse-granularity-inventory | 功能 | ✅已完成 | [helloagents/history/2026-03/202603290652_warehouse-granularity-inventory](2026-03/202603290652_warehouse-granularity-inventory/) |
+| 202603291000 | dashboard-sales-history-compare | 功能 | ✅已完成 | [helloagents/history/2026-03/202603291000_dashboard-sales-history-compare](2026-03/202603291000_dashboard-sales-history-compare/) |
+| 202603291020 | remove-sale-outbound-report-preview | 修复 | ✅已完成 | [helloagents/history/2026-03/202603291020_remove-sale-outbound-report-preview](2026-03/202603291020_remove-sale-outbound-report-preview/) |
 
 ---
 
@@ -60,3 +62,5 @@
 - [202603290635_order-approve-permission-fix](2026-03/202603290635_order-approve-permission-fix/) - 新增独立审批权限，修复采购员/销售员仍显示审批按钮的问题
 - [202603290650_frontend-role-log-zh-display](2026-03/202603290650_frontend-role-log-zh-display/) - 将角色权限与日志编码展示统一改为前端中文翻译
 - [202603290652_warehouse-granularity-inventory](2026-03/202603290652_warehouse-granularity-inventory/) - 完成仓库维度库存改造、订单仓库字段扩展与多仓调拨/筛选闭环
+- [202603291000_dashboard-sales-history-compare](2026-03/202603291000_dashboard-sales-history-compare/) - 为驾驶舱新增历史烟品销售对比图表与数量/金额切换能力
+- [202603291020_remove-sale-outbound-report-preview](2026-03/202603291020_remove-sale-outbound-report-preview/) - 删除销售出库独立路由页与经营大屏导出预览区块

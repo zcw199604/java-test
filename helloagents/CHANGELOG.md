@@ -7,6 +7,8 @@
 ## [Unreleased]
 
 ### 新增
+- 新增驾驶舱历史烟品销售对比：支持按近 7 天 / 30 天查看重点烟品销售数量与销售金额趋势
+- 新增驾驶舱历史销售接口 `GET /api/dashboard/sales-history`，返回重点烟品日期序列与多序列图表数据
 - 新增仓库维度库存改造：`inventories` 升级为 `product_id + warehouse_id` 组合唯一，`inventory_records`、`purchase_orders`、`sales_orders` 同步扩展仓库字段
 - 引入 MyBatis 注解式数据访问基础设施：新增 `mybatis-spring-boot-starter`、`@MapperScan` 与驼峰映射配置
 - 新增低风险模块 Mapper 试点：`audit`、`message`、`customer`、`supplier`、`catalog`
@@ -14,6 +16,8 @@
 - 新增 `AuthIntegrationTest` 与 `BulletinIntegrationTest`，覆盖验证码失败、禁用账号、忘记/重置密码、会话失效与公告发布查询
 
 ### 变更
+- 驾驶舱首页的烟品销售趋势图已由前端硬编码假数据改为真实销售订单聚合数据，并支持数量/金额维度切换
+- 销售模块已移除独立“销售出库”页面路由，经营大屏已移除“导出预览”区块
 - 采购入库、销售出库、库存调拨、库存盘点现均按指定仓库执行，库存总览/流水/台账/盘点页支持“全部仓库 + 仓库筛选”
 - 完成 `auth`、`interceptor` 与 `bulletin` 剩余 JDBC 访问迁移，并同步收口 `system`、`report`、`dashboard`、`purchase`、`sales`、`inventory` 等模块的 MyBatis 注解数据访问
 - 为 MyBatis 迁移执行方案补充方案包与分阶段任务，明确“先测试、后替换”的执行路径

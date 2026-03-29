@@ -4,9 +4,9 @@
 提供任务书对齐的后端 API、认证权限、采销存流程与审计追溯能力。
 
 ## 模块概述
-- **职责:** REST API、Shiro 认证与密码哈希、Spring JDBC 数据访问、Excel 导入导出、日志消息与业务服务编排
+- **职责:** REST API、Shiro 认证与密码哈希、Spring JDBC / MyBatis 注解数据访问、Excel 导入导出、日志消息与业务服务编排
 - **状态:** 🚧开发中
-- **最后更新:** 2026-03-28
+- **最后更新:** 2026-03-29
 
 ## 规范
 - 所有 `/api/*` 业务接口默认要求登录。
@@ -34,6 +34,8 @@
 
 
 ## 本次更新（2026-03-29）
+- 新增 `GET /api/dashboard/sales-history`，支持按 `metric=quantity|amount`、`days=7|30`、`limit` 聚合重点烟品历史销售对比数据。
+- `DashboardService` 已接入真实销售订单聚合逻辑，只统计已出库/回款链路单据，并自动补齐日期序列返回给驾驶舱图表。
 - 后端集成测试已补充仓库维度库存回归场景，覆盖选仓入库/出库、双仓调拨、按仓盘点和缺少仓库参数的失败分支。
 - 库存、采购、销售服务已统一切换为仓库维度库存模型：`inventories` 以 `product_id + warehouse_id` 作为唯一库存单元。
 - `POST /api/purchases/{id}/inbound` 与 `POST /api/sales/{id}/outbound` 现要求请求体携带 `warehouseId`，并回写订单仓库字段与库存流水仓库字段。

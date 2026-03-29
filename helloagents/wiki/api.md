@@ -104,6 +104,7 @@
 
 ### 报表与追溯
 - `GET /api/dashboard/summary`
+- `GET /api/dashboard/sales-history` - 驾驶舱历史烟品销售对比，参数：`metric=quantity|amount`、`days=7|30`、`limit`
 - `GET /api/reports/purchase-summary`
 - `GET /api/reports/sales-summary`
 - `GET /api/reports/inventory-summary`
@@ -131,3 +132,8 @@
 - `POST /api/inventory-transfers`：请求体使用 `productId`、`fromWarehouseId`、`toWarehouseId`、`quantity`、`remark`。
 - `POST /api/inventory-checks`：请求体需包含 `productId`、`warehouseId`、`quantity`、`remark`。
 - `GET /api/inventories` / `GET /api/inventory-records` / `GET /api/inventory-warnings`：支持 `warehouseId` 过滤；`GET /api/inventories` 额外支持 `keyword`、`status`。
+
+## 2026-03-29 驾驶舱历史销售对比补充
+- 驾驶舱新增 `GET /api/dashboard/sales-history` 用于首页重点烟品历史销售对比图表。
+- 返回结构包含 `metric`、`periods`、`series[]`，其中 `series[].values` 与 `periods` 一一对应。
+- 当前统计口径为销售订单状态 `OUTBOUND`、`PARTIAL_PAID`、`PAID`，用于反映已进入履约链路的真实销售数据。

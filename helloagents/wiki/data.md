@@ -1,47 +1,71 @@
 # 数据模型
 
 ## 概述
-当前系统围绕“认证权限、系统管理、采销存业务、日志消息、追溯异常、Excel 批处理”扩展了完整 MySQL 数据表集合。
+当前数据模型以 `backend/src/main/resources/sql/schema.sql` 与 `data.sql` 为准。后端启动时会自动建表、执行兼容性 `ALTER TABLE`，并重新加载演示数据。
 
 ## 核心表
+
+### 认证与权限
 - `roles`：角色定义
+- `users`：用户账号
 - `permissions` / `role_permissions`：权限点与角色权限关系
-- `users` / `user_data_scopes` / `user_sessions`：用户、数据范围、登录会话
-- `captcha_records` / `password_reset_records`：验证码与重置密码流程
-- `login_logs` / `operation_logs`：登录日志与操作日志
+- `user_data_scopes`：用户数据范围
+- `user_sessions`：登录会话令牌
+- `captcha_records`：登录验证码
+- `password_reset_records`：重置密码令牌
+
+### 系统与基础资料
 - `system_configs`：系统配置
+- `categories`：品类
+- `products`：商品
+- `suppliers`：供应商
+- `customers`：客户
+- `warehouses`：仓库
+
+### 采购与销售
+- `purchase_orders`：采购单，包含审核、取消、入库仓信息
+- `sales_orders`：销售单，包含审核、取消、出库仓与回款累计
+- `payment_records`：销售回款记录
+- `bulletins`：销售信息发布 / 公告
+
+### 库存与追溯
+- `inventories`：库存台账，当前以 `product_id + warehouse_id` 为唯一库存单元
+- `inventory_records`：库存流水，记录入库、出库、调拨、盘点与来源/目标仓
+- `trace_records`：业务追溯节点
+- `abnormal_documents`：异常单据
 - `messages`：站内消息
-- `categories` / `products` / `suppliers` / `customers` / `warehouses`：基础主数据
-- `purchase_requisitions` / `purchase_orders` / `purchase_order_tracks`：采购需求、采购单、采购跟踪，采购单包含 `audited_by`、`audited_at`、`audit_remark`、`cancel_reason`
-- `bulletins` / `sales_orders` / `payment_records` / `receivable_records`：销售公告、销售单、回款、应收，销售单包含 `audited_by`、`audited_at`、`audit_remark`、`cancel_reason`
-- `inventories` / `inventory_records` / `inventory_check_reports` / `warning_records`：库存台账、流水、盘点、预警
-- `trace_records` / `abnormal_documents`：全链路追溯与异常单据
+- `login_logs` / `operation_logs`：登录日志与操作日志
 
 ## 关键关系
 - `users.role_code -> roles.code`
 - `role_permissions.role_code -> roles.code`
 - `role_permissions.permission_code -> permissions.code`
-- `purchase_orders.requisition_id -> purchase_requisitions.id`
 - `purchase_orders.supplier_id -> suppliers.id`
 - `purchase_orders.product_id -> products.id`
 - `sales_orders.customer_id -> customers.id`
 - `sales_orders.product_id -> products.id`
+- `payment_records.sales_order_id -> sales_orders.id`
 - `inventories.product_id -> products.id`
 - `inventories.warehouse_id -> warehouses.id`
 - `inventory_records.product_id -> products.id`
-- `payment_records.sales_order_id -> sales_orders.id`
-- `receivable_records.sales_order_id -> sales_orders.id`
-- `messages.biz_id / trace_records.biz_id / abnormal_documents.biz_id` 指向对应业务主键
+- `inventory_records.warehouse_id / from_warehouse_id / to_warehouse_id -> warehouses.id`
+- `messages.biz_id`、`trace_records.biz_id`、`abnormal_documents.biz_id` 指向对应业务主键
+
+## 当前实现说明
+- 当前**不存在**独立的 `purchase_requisitions`、`purchase_order_tracks`、`inventory_check_reports`、`warning_records`、`receivable_records` 表
+- 采购需求兼容接口当前直接复用 `purchase_orders`
+- 采购 / 销售业务轨迹由 `trace_records` 与 `operation_logs` 承担
+- 库存盘点、调拨、预警轨迹统一沉淀到 `inventory_records` 与 `messages`
 
 ## 业务链路
 1. 用户登录 → 写入 `user_sessions`、`login_logs`
-2. 采购提报 → 建采购单 → 审核 → 到货 → 入库 → 写 `purchase_order_tracks`、`inventory_records`、`trace_records`
-3. 销售公告发布 → 建销售单 → 审核 → 出库 → 回款 → 写 `payment_records`、`receivable_records`、`trace_records`
-4. 库存调拨 / 盘点 → 写 `inventory_records`、`inventory_check_reports`、`warning_records`
-5. 异常审核 / 合规追溯 → 聚合 `trace_records` 与 `abnormal_documents`
+2. 采购建单 / 编辑 / 审核 / 到货 / 入库 → 写 `purchase_orders`、`operation_logs`、`trace_records`、`inventory_records`
+3. 销售建单 / 编辑 / 审核 / 出库 / 回款 → 写 `sales_orders`、`payment_records`、`operation_logs`、`trace_records`、`inventory_records`
+4. 库存调拨 / 盘点 / 预警 → 写 `inventories`、`inventory_records`、`messages`
+5. 异常审核 / 合规追溯 → 聚合 `trace_records`、`abnormal_documents`、`operation_logs`
 
-
-## 本次更新（2026-03-29）
-- `inventories` 已从单仓模型升级为多仓模型，新增 `warehouse_id` 并使用组合唯一键 `product_id + warehouse_id`。
-- `inventory_records` 新增 `warehouse_id / warehouse_name / from_warehouse_id / to_warehouse_id` 等字段，用于记录入库、出库、调拨、盘点的仓库轨迹。
-- `purchase_orders` 与 `sales_orders` 均新增 `warehouse_id / warehouse_name`，用于保留订单实际入库仓/出库仓。
+## 本次确认（2026-03-29）
+- `inventories` 已升级为多仓模型，并建立组合唯一键 `product_id + warehouse_id`
+- `inventory_records` 已支持 `warehouse_id`、`from_warehouse_id`、`to_warehouse_id` 等仓库轨迹字段
+- `purchase_orders` 与 `sales_orders` 已扩展 `warehouse_id / warehouse_name`
+- `data.sql` 会在启动时先清空核心业务表，再重新插入演示账号、仓库、商品与业务单据

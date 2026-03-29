@@ -1,21 +1,26 @@
 # sales
 
 ## 目的
-管理销售信息发布、销售订单创建、审核、销售出库、回款与应收状态。
+管理销售信息发布、销售单创建、审核、取消、出库、回款、统计与应收。
 
 ## 模块概述
-- **职责:** 信息发布、销售单、审核、取消、出库、回款、应收、统计、Excel 批处理
-- **状态:** ✅已落地，待数据库联调验证
-- **最后更新:** 2026-03-28
+- **职责:** 公告发布、销售单、审核、取消、出库、回款、统计、应收、Excel 导入
+- **状态:** ✅可用
+- **最后更新:** 2026-03-29
 
 ## 规范
-- 销售单状态流转为 `CREATED -> APPROVED|REJECTED -> OUTBOUND -> PARTIAL_PAID|PAID`，其中 `CREATED/REJECTED` 可转为 `CANCELLED`。
-- `GET/POST /api/bulletins` 对应销售信息发布能力，公告数据写入 `bulletins` 表。
-- `POST /api/sales/{id}/audit` 会写入 `audited_by`、`audited_at`、`audit_remark`；`POST /api/sales/{id}/cancel` 会写入 `cancel_reason`。
-- `POST /api/sales/import` 走 Excel 批量导入，限制单文件 `<=5MB`、单次 `<=1000` 行。
-- 审核、出库、回款均会写入 `trace_records`；出库后会触发库存预警检查并向库管角色推送站内消息。
+- 状态流转为 `CREATED -> APPROVED|REJECTED -> OUTBOUND -> PARTIAL_PAID|PAID`，其中 `CREATED/REJECTED` 可转为 `CANCELLED`
+- `POST /api/sales/{id}/outbound` 必须携带 `warehouseId`
+- `POST /api/sales/import` 限制单文件 `<= 5MB`、单次 `<= 1000` 行
+- 审核、出库仅允许超级管理员、普通管理员或库管执行
 
+## 当前实现
+- `GET /api/sales/{id}` 支持编辑页回填
+- 编辑后的销售单会回到待审核状态
+- `GET /api/sales/receivables` 与 `GET /api/sales/statistics` 提供应收与汇总能力
+- `GET/POST /api/bulletins` 承载销售信息发布
 
-## 本次更新（2026-03-28）
-- 销售订单支持详情加载与重新编辑，更新后自动回到待审核状态。
-- 前端销售编辑页不再误调用创建接口。
+## 最新变更
+- 销售出库已切换为按仓扣减库存
+- 销售管理的独立“销售出库页”已从当前路由映射中移除，统一回收到订单页动作
+- 日志、追溯、库存预警消息已覆盖审核、出库与回款链路

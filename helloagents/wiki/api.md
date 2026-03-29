@@ -1,30 +1,37 @@
 # API 手册
 
 ## 概述
-当前系统已形成面向任务书的后端接口集合，并配套企业后台工作台风格前端页面，覆盖认证、系统管理、基础资料、采购、销售、库存、报表、日志、消息与追溯等模块。
+当前接口以 `backend/src/main/java/**/Controller.java` 为准，覆盖认证、系统管理、基础资料、采购、销售、库存、驾驶舱、报表、日志、消息与追溯能力。
 
-## 认证方式
+## 认证与响应约定
 - 登录接口：`POST /api/auth/login`
 - 鉴权方式：`Authorization: Bearer <token>`
-- 当前登录态：`GET /api/auth/profile`
-- 辅助接口：`GET /api/auth/captcha`、`POST /api/auth/forgot-password`、`POST /api/auth/reset-password`
+- 开放接口：`/api/auth/login`、`/api/auth/captcha`、`/api/auth/forgot-password`、`/api/auth/reset-password`、`/api/health`
+- 响应格式：除下载接口外，统一返回 `ApiResponse { code, message, data }`
+- 文件下载：`GET /api/reports/export` 直接返回 Excel 文件流
 
 ---
 
-## 核心接口
+## 接口清单
 
-### 认证与系统
+### 健康检查
+- `GET /api/health`
+
+### 认证
 - `GET /api/auth/captcha`
 - `POST /api/auth/login`
 - `GET /api/auth/profile`
 - `POST /api/auth/logout`
 - `POST /api/auth/forgot-password`
 - `POST /api/auth/reset-password`
+
+### 系统管理
 - `GET /api/users`
 - `GET /api/users/{id}`
 - `POST /api/users`
 - `PUT /api/users/{id}`
 - `PUT /api/users/{id}/status`
+- `DELETE /api/users/{id}`
 - `GET /api/roles`
 - `POST /api/roles`
 - `PUT /api/roles/{code}`
@@ -36,7 +43,11 @@
 - `PUT /api/profile`
 - `POST /api/profile/password`
 - `GET /api/warehouses`
+  - 支持参数：`keyword`、`status`
+- `GET /api/warehouses/{id}`
 - `POST /api/warehouses`
+- `PUT /api/warehouses/{id}`
+- `PUT /api/warehouses/{id}/status`
 
 ### 日志与消息
 - `GET /api/logs/login`
@@ -49,62 +60,73 @@
 - `POST /api/categories`
 - `PUT /api/categories/{id}`
 - `GET /api/products`
+  - 支持参数：`keyword`、`status`、`category`
 - `GET /api/products/{id}`
 - `POST /api/products`
 - `PUT /api/products/{id}`
 - `DELETE /api/products/{id}`
 - `GET /api/suppliers`
+  - 支持参数：`keyword`、`status`
 - `POST /api/suppliers`
 - `PUT /api/suppliers/{id}`
 - `DELETE /api/suppliers/{id}`
 - `GET /api/customers`
+  - 支持参数：`keyword`、`status`
+- `GET /api/customers/{id}`
 - `POST /api/customers`
 - `PUT /api/customers/{id}`
 - `DELETE /api/customers/{id}`
 
-### 采购管理
+### 采购
 - `GET /api/purchase-requisitions`
-- `POST /api/purchase-requisitions`
+  - 兼容接口，当前直接复用采购单列表，不对应独立数据表
 - `GET /api/purchases`
+- `GET /api/purchases/requisitions`
+  - 与 `GET /api/purchase-requisitions` 一致，当前均返回采购单列表
+- `GET /api/purchases/{id}`
+- `GET /api/purchases/{id}/trace`
 - `POST /api/purchases`
 - `PUT /api/purchases/{id}`
 - `POST /api/purchases/{id}/audit`
 - `POST /api/purchases/{id}/cancel`
 - `POST /api/purchases/{id}/receive`
 - `POST /api/purchases/{id}/inbound`
-- `GET /api/purchases/{id}/trace`
-- `GET /api/purchases/analysis`
-- `GET /api/purchases/export`
+  - 请求体需包含 `warehouseId`，可选 `remark`
 - `POST /api/purchases/import`
 
-### 销售管理
+### 销售
 - `GET /api/bulletins`
 - `POST /api/bulletins`
 - `GET /api/sales`
+- `GET /api/sales/{id}`
 - `POST /api/sales`
 - `PUT /api/sales/{id}`
 - `POST /api/sales/{id}/audit`
 - `POST /api/sales/{id}/cancel`
 - `POST /api/sales/{id}/outbound`
+  - 请求体需包含 `warehouseId`，可选 `remark`
 - `POST /api/sales/{id}/payment`
-- `GET /api/sales/receivables`
 - `GET /api/sales/statistics`
-- `GET /api/sales/export`
+- `GET /api/sales/receivables`
 - `POST /api/sales/import`
 
-### 库存管理
+### 库存
 - `GET /api/inventories`
-- `GET /api/inventories/export`
-- `POST /api/inventories/import`
+  - 支持参数：`warehouseId`、`keyword`、`status`
 - `GET /api/inventory-records`
+  - 支持参数：`warehouseId`、`bizType`
 - `GET /api/inventory-warnings`
-- `GET /api/inventory-warnings/history`
+  - 支持参数：`warehouseId`
 - `POST /api/inventory-transfers`
+  - 请求体字段：`productId`、`fromWarehouseId`、`toWarehouseId`、`quantity`、`remark`
 - `POST /api/inventory-checks`
+  - 请求体字段：`productId`、`warehouseId`、`quantity`、`remark`
+- `POST /api/inventories/import`
 
-### 报表与追溯
+### 驾驶舱与报表
 - `GET /api/dashboard/summary`
-- `GET /api/dashboard/sales-history` - 驾驶舱历史烟品销售对比，参数：`metric=quantity|amount`、`days=7|30`、`limit`
+- `GET /api/dashboard/sales-history`
+  - 支持参数：`metric=quantity|amount`、`days=7|30`、`limit`
 - `GET /api/reports/purchase-summary`
 - `GET /api/reports/sales-summary`
 - `GET /api/reports/inventory-summary`
@@ -115,25 +137,11 @@
 - `POST /api/reports/abnormal-docs/{id}/audit`
 - `GET /api/reports/linkage`
 - `GET /api/reports/export`
+  - 返回 `report-summary.xlsx`
 
+---
 
-## 2026-03-28 缺失功能补齐补充
-- 认证：前端已接入 `GET /api/auth/captcha`、`POST /api/auth/forgot-password`、`POST /api/auth/reset-password`。
-- 采购：新增 `GET /api/purchases/{id}`、`PUT /api/purchases/{id}` 用于订单编辑。
-- 销售：新增 `GET /api/sales/{id}`、`PUT /api/sales/{id}` 用于订单编辑。
-- 客户：`GET /api/customers` 支持 `keyword/status` 过滤，并新增 `GET /api/customers/{id}`。
-- 仓库：新增 `GET /api/warehouses/{id}`、`PUT /api/warehouses/{id}`、`PUT /api/warehouses/{id}/status`。
-- 消息：前端新增独立消息中心，复用 `GET /api/messages` 与 `POST /api/messages/{id}/read`。
-
-
-## 本次更新（2026-03-29）
-- `POST /api/purchases/{id}/inbound`：请求体需包含 `warehouseId`，可选 `remark`；成功后返回回写仓库信息的采购单。
-- `POST /api/sales/{id}/outbound`：请求体需包含 `warehouseId`，可选 `remark`；按指定仓库扣减库存。
-- `POST /api/inventory-transfers`：请求体使用 `productId`、`fromWarehouseId`、`toWarehouseId`、`quantity`、`remark`。
-- `POST /api/inventory-checks`：请求体需包含 `productId`、`warehouseId`、`quantity`、`remark`。
-- `GET /api/inventories` / `GET /api/inventory-records` / `GET /api/inventory-warnings`：支持 `warehouseId` 过滤；`GET /api/inventories` 额外支持 `keyword`、`status`。
-
-## 2026-03-29 驾驶舱历史销售对比补充
-- 驾驶舱新增 `GET /api/dashboard/sales-history` 用于首页重点烟品历史销售对比图表。
-- 返回结构包含 `metric`、`periods`、`series[]`，其中 `series[].values` 与 `periods` 一一对应。
-- 当前统计口径为销售订单状态 `OUTBOUND`、`PARTIAL_PAID`、`PAID`，用于反映已进入履约链路的真实销售数据。
+## 当前实现说明
+- 采购、销售、库存导入接口均限制单文件 `<= 5MB`、单次 `<= 1000` 行
+- 审核、到货、入库、出库等关键动作会写入操作日志与追溯记录
+- 当前不存在 `GET /api/purchases/export`、`GET /api/sales/export`、`GET /api/inventories/export`、`GET /api/inventory-warnings/history`、`GET /api/purchases/analysis` 等运行时接口

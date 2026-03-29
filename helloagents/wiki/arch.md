@@ -3,51 +3,67 @@
 ## 总体架构
 ```mermaid
 flowchart TD
-    A[浏览器 / 业务用户] --> B[Vue 3 前端工作台]
-    B --> C[Spring Boot 后端 API]
-    C --> D[Shiro认证与权限层]
-    D --> E[系统管理 / 采购 / 销售 / 库存 / 报表 / 消息 / 审计]
-    E --> F[(MySQL 8)]
-    E --> G[Apache POI Excel导入导出]
+    U[浏览器 / 业务用户] --> F[Vue 3 SPA]
+    F --> S[Spring Boot 2.7]
+    S --> I[AuthInterceptor + Shiro]
+    I --> C[Controller / Service]
+    C --> M[MyBatis Mapper / SqlProvider]
+    M --> DB[(MySQL 8)]
+    C --> X[Apache POI / ExcelUtil]
+    S --> Static[静态资源与 SPA 回退]
 ```
 
 ## 技术栈
-- **后端:** Java 8 / Spring Boot 2.7 / MyBatis（注解 SQL + Provider） / Apache Shiro / Apache POI
+- **后端:** Java 8 / Spring Boot 2.7.18 / Apache Shiro / MyBatis 注解与 SqlProvider / Apache POI
 - **前端:** Vue 3 / Vite / Vue Router / Pinia / Axios / Element Plus / ECharts / TypeScript
 - **数据:** MySQL 8
 
 ## 模块划分
-- `auth`：登录、验证码、忘记/重置密码、会话令牌、菜单与权限返回（兼容历史字段命名，Bearer 会话校验由 `AuthInterceptor` 落地）
-- `system`：用户、角色、权限、系统配置、个人中心、仓库管理
-- `audit`：登录日志、操作日志、追溯与异常记录
-- `message`：站内消息、预警通知已读管理
-- `catalog` / `supplier` / `customer`：基础主数据管理
-- `purchase`：采购需求、采购单、审核、跟踪、到货、入库、Excel
-- `sales`：信息发布、销售单、审核、出库、回款、应收、Excel
-- `inventory`：库存台账、调拨、盘点、预警、预警历史、Excel
-- `report`：采销存汇总、联动分析、合规追溯、异常单据、报表导出
-- `frontend`：后台工作台、动态路由、按钮权限、图表与导出交互
+- `auth`：验证码、登录、会话令牌生成、忘记密码、重置密码、当前用户资料
+- `interceptor` / `config`：`AuthInterceptor` 统一拦截 Bearer 会话，`WebConfig` 注册拦截器，`ShiroConfig` 提供认证能力
+- `system`：用户、角色、权限、系统配置、个人中心、仓库
+- `audit` / `message`：登录日志、操作日志、追溯、异常单据、站内消息
+- `catalog` / `supplier` / `customer`：商品、品类、供应商、客户基础资料
+- `purchase`：采购单创建、编辑、审核、取消、到货、入库、导入、追溯
+- `sales`：公告发布、销售单创建、编辑、审核、取消、出库、回款、统计、应收、导入
+- `inventory`：多仓库存总览、流水、调拨、盘点、预警、导入
+- `report` / `dashboard`：经营概览、历史销售对比、汇总报表、联动分析、异常审核、Excel 导出
+- `frontend`：工作台布局、动态路由、按钮权限、图表、表格与导出交互
 
-## 部署与启动约定
-- 默认运行形态为单后端入口：Spring Boot 同时提供 `/api/*` 接口与构建后的前端静态资源。
-- 前端源码位于 `frontend/`，发布前需执行构建并将产物写入 `backend/src/main/resources/static/`。
-- 非前端专项调试场景，不单独启动 Vite 开发服务器，避免出现 5173 与后端版本不一致的问题。
+## 运行与部署约定
+- 默认采用单后端入口：Spring Boot 统一提供 `/api/*` 与前端静态资源
+- 前端构建输出目录固定为 `backend/src/main/resources/static/`
+- `SpaForwardController` 负责常用业务页的 SPA history 回退
+- 常规联调和验收统一访问 `http://localhost:8080`
+- `http://localhost:5173` 仅用于前端局部开发；代理 `/api` 到后端
 
-## 核心流程
+## 认证与请求链路
 ```mermaid
 sequenceDiagram
     participant U as 用户
     participant F as 前端
-    participant B as 后端
+    participant A as AuthService
+    participant I as AuthInterceptor
+    participant B as 业务 Controller/Service
     participant DB as MySQL
+
     U->>F: 登录/业务操作
-    F->>B: 携带 Bearer Token 请求 API
-    B->>DB: 通过 AuthInterceptor 校验会话、权限与业务数据
-    B->>DB: 写入日志/追溯/消息/单据状态
-    DB-->>B: 返回结果
-    B-->>F: 返回 JSON / Excel
-    F-->>U: 展示业务结果与预警
+    F->>A: POST /api/auth/login
+    A->>DB: 校验用户 + 写入 user_sessions
+    A-->>F: 返回 token
+    F->>I: 携带 Authorization: Bearer token
+    I->>DB: 校验 user_sessions 状态与过期时间
+    I->>B: 注入 userId / username / roleCode
+    B->>DB: 读写业务数据、日志、追溯、消息
+    B-->>F: 返回 ApiResponse 或 Excel 文件流
 ```
+
+## 当前架构要点
+- 真实鉴权以数据库会话为准，`JwtTokenUtil` 仅保留兼容层壳实现
+- 控制器层除导出接口外，统一通过 `ApiResponse` 返回 `code/message/data`
+- 数据访问已统一收口到 MyBatis Mapper，复杂查询通过 `SqlProvider` 构建
+- 报表导出使用后端 `ExcelUtil` 生成 `.xlsx`，前端本地导出使用 `xlsx` / `file-saver`
+- 库存模型已升级为“商品 + 仓库”双维度唯一库存
 
 ## 重大架构决策
 | adr_id | title | date | status | affected_modules | details |

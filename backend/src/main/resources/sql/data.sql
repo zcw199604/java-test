@@ -22,11 +22,11 @@ INSERT INTO roles (id, code, name, remark) VALUES
 (5, 'KEEPER', '库管人员', '负责库存台账、盘点与预警');
 
 INSERT INTO users (id, username, password, real_name, role_code, status) VALUES
-(1, 'admin', '123456', '超级管理员', 'SUPER_ADMIN', 'ENABLED'),
-(2, 'manager', '123456', '普通管理员', 'ADMIN', 'ENABLED'),
-(3, 'buyer', '123456', '采购张三', 'PURCHASER', 'ENABLED'),
-(4, 'seller', '123456', '销售李四', 'SELLER', 'ENABLED'),
-(5, 'keeper', '123456', '库管王五', 'KEEPER', 'ENABLED');
+(1, 'admin', '033a4de787e4383ba6e204364b23ed5adca533e3c70b1f76ba53bac28796a5ac', '超级管理员', 'SUPER_ADMIN', 'ENABLED'),
+(2, 'manager', 'd16db968c4d2d40fc02c398a9db5aec8ceebdce6ba5f1c4a4451a688761fa5b8', '普通管理员', 'ADMIN', 'ENABLED'),
+(3, 'buyer', '79ecb5929af7248dc6acd83c61a7a71508334d3286d40e1cb34369681478667a', '采购张三', 'PURCHASER', 'ENABLED'),
+(4, 'seller', '9b36993417166188e7919d718630c6052ff62ebf60afa1f9f0c0aecb9abe25eb', '销售李四', 'SELLER', 'ENABLED'),
+(5, 'keeper', 'c2012c0633021ccfb8d8de43eece1ad033dac4005b97134189c7bed4a21b53ce', '库管王五', 'KEEPER', 'ENABLED');
 
 INSERT INTO categories (id, name, remark, status) VALUES
 (1, '高端卷烟', '高端系列', 'ENABLED'),

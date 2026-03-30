@@ -27,10 +27,6 @@
           <el-checkbox v-model="form.remember">记住我</el-checkbox>
           <el-link type="primary" @click="openForgotDialog">忘记密码？</el-link>
         </div>
-        <div class="login-options">
-          <span>演示账号：admin / buyer / seller / keeper</span>
-          <span v-if="captchaExpiredAt">验证码有效期至 {{ captchaExpiredAt }}</span>
-        </div>
         <el-button type="primary" class="login-btn" size="large" :loading="submitting" @click="handleSubmit">登录系统</el-button>
       </el-form>
     </el-card>
@@ -80,7 +76,6 @@ const forgotVisible = ref(false)
 const errorMessage = ref('')
 const captchaKey = ref('')
 const captchaText = ref('----')
-const captchaExpiredAt = ref('')
 
 const form = reactive<LoginFormState>({
   username: 'admin',
@@ -105,7 +100,6 @@ const refreshCaptcha = async () => {
   const data = result.data || {}
   captchaKey.value = data.captchaKey || data.uuid || ''
   captchaText.value = data.captchaCode || data.code || '----'
-  captchaExpiredAt.value = data.expiredAt || ''
   form.captcha = ''
   forgotForm.captchaCode = ''
 }

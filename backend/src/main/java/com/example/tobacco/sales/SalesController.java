@@ -26,6 +26,11 @@ public class SalesController {
         return ApiResponse.success(salesService.detail(id, String.valueOf(request.getAttribute("username")), String.valueOf(request.getAttribute("roleCode"))));
     }
 
+    @GetMapping("/{id}/trace")
+    public ApiResponse<List<Map<String, Object>>> trace(@PathVariable Long id, HttpServletRequest request) {
+        return ApiResponse.success(salesService.trace(id, String.valueOf(request.getAttribute("username")), String.valueOf(request.getAttribute("roleCode"))));
+    }
+
     @PostMapping
     public ApiResponse<SalesOrderItem> create(@Validated @RequestBody CreateSalesRequest request, HttpServletRequest httpRequest) {
         return ApiResponse.success(salesService.create(request, String.valueOf(httpRequest.getAttribute("username"))));

@@ -57,8 +57,11 @@ public class ReportService {
         return result;
     }
 
-    public List<Map<String, Object>> complianceTrace() {
-        return reportMapper.selectComplianceTrace();
+    public List<Map<String, Object>> complianceTrace(String keyword, Long warehouseId, String bizType, String nodeCode) {
+        String keywordLike = keyword != null && keyword.trim().length() > 0 ? "%" + keyword.trim() + "%" : null;
+        String bizTypeFilter = bizType != null && bizType.trim().length() > 0 ? bizType.trim() : null;
+        String nodeCodeFilter = nodeCode != null && nodeCode.trim().length() > 0 ? nodeCode.trim() : null;
+        return reportMapper.selectComplianceTrace(keywordLike, warehouseId, bizTypeFilter, nodeCodeFilter);
     }
 
     public List<Map<String, Object>> abnormalDocs() {

@@ -8,6 +8,7 @@
 
 | 时间戳 | 功能名称 | 类型 | 状态 | 方案包路径 |
 |--------|----------|------|------|------------|
+| 202604120207 | sales-outbound-trace-completion | 功能 | ✅已完成 | [helloagents/history/2026-04/202604120207_sales-outbound-trace-completion](2026-04/202604120207_sales-outbound-trace-completion/) |
 | 202603230000 | tobacco-platform-init | 功能 | ✅已完成 | [helloagents/history/2026-03/202603230000_tobacco-platform-init](2026-03/202603230000_tobacco-platform-init/) |
 | 202603231548 | full-platform-features | 功能 | ✅已完成 | [helloagents/history/2026-03/202603231548_full-platform-features](2026-03/202603231548_full-platform-features/) |
 | 202603240034 | doc-alignment-report-fix | 修复 | ✅已完成 | [helloagents/history/2026-03/202603240034_doc-alignment-report-fix](2026-03/202603240034_doc-alignment-report-fix/) |
@@ -64,3 +65,7 @@
 - [202603290652_warehouse-granularity-inventory](2026-03/202603290652_warehouse-granularity-inventory/) - 完成仓库维度库存改造、订单仓库字段扩展与多仓调拨/筛选闭环
 - [202603291000_dashboard-sales-history-compare](2026-03/202603291000_dashboard-sales-history-compare/) - 为驾驶舱新增历史烟品销售对比图表与数量/金额切换能力
 - [202603291020_remove-sale-outbound-report-preview](2026-03/202603291020_remove-sale-outbound-report-preview/) - 删除销售出库独立路由页与经营大屏导出预览区块
+
+### 2026-04
+
+- [202604120207_sales-outbound-trace-completion](2026-04/202604120207_sales-outbound-trace-completion/) - 补齐销售出库选仓页面与库存统一追溯链路

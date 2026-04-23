@@ -13,7 +13,7 @@ public interface InventoryMapper {
     List<InventoryItem> list(@Param("warehouseId") Long warehouseId, @Param("keywordLike") String keywordLike, @Param("statusFilter") String statusFilter);
 
     @SelectProvider(type = InventorySqlProvider.class, method = "buildRecordsSql")
-    List<InventoryRecordItem> records(@Param("warehouseId") Long warehouseId, @Param("bizType") String bizType);
+    List<InventoryRecordItem> records(@Param("warehouseId") Long warehouseId, @Param("bizType") String bizType, @Param("keywordLike") String keywordLike);
 
     @SelectProvider(type = InventorySqlProvider.class, method = "buildWarningsSql")
     List<InventoryItem> warnings(@Param("warehouseId") Long warehouseId);

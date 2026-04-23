@@ -18,6 +18,10 @@ public interface SalesMapper {
     @Select(DETAIL_SQL + " where s.id=#{id}")
     SalesOrderItem detail(@Param("id") Long id);
 
+
+    @Select("select id, biz_type as bizType, biz_id as bizId, order_no as orderNo, node_code as nodeCode, node_name as nodeName, operator, remark, DATE_FORMAT(created_at,'%Y-%m-%d %H:%i:%s') as createdAt from trace_records where biz_type='SALES' and (biz_id=#{id} or order_no=#{orderNo}) order by id desc")
+    List<Map<String, Object>> trace(@Param("id") Long id, @Param("orderNo") String orderNo);
+
     @Insert("insert into sales_orders(order_no,customer_id,product_id,quantity,unit_price,total_amount,paid_amount,status,created_by) values(#{orderNo},#{customerId},#{productId},#{quantity},#{unitPrice},#{totalAmount},#{paidAmount},#{status},#{createdBy})")
     void insertOrder(@Param("orderNo") String orderNo,
                      @Param("customerId") Long customerId,

@@ -31,6 +31,9 @@ public class InventorySqlProvider {
                 WHERE("(r.warehouse_id=#{warehouseId} or r.from_warehouse_id=#{warehouseId} or r.to_warehouse_id=#{warehouseId})");
             }
             if (params.get("bizType") != null) WHERE("r.biz_type=#{bizType}");
+            if (params.get("keywordLike") != null) {
+                WHERE("(p.name like #{keywordLike} or r.warehouse_name like #{keywordLike} or r.from_warehouse_name like #{keywordLike} or r.to_warehouse_name like #{keywordLike} or r.remark like #{keywordLike} or r.operator_name like #{keywordLike})");
+            }
             ORDER_BY("r.id desc");
         }}.toString();
     }

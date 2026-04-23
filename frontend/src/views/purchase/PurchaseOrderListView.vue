@@ -24,6 +24,7 @@
       <AppTable :columns="columns" :rows="filteredRows">
         <template #status="{ value }"><el-tag :type="statusTypeMap[value] || 'info'">{{ statusLabelMap[value] || value }}</el-tag></template>
         <template #actions="{ row }">
+          <el-button v-permission="'purchase:view'" link type="info" @click="handleDetail(row)">详情</el-button>
           <el-button v-permission="'order:approve'" link type="primary" @click="openAuditDialog(row)" v-if="row.status === 'CREATED'">审核</el-button>
           <el-button v-permission="'purchase:edit'" link type="danger" @click="handleCancel(row)" v-if="row.status === 'CREATED' || row.status === 'REJECTED'">取消</el-button>
           <el-button v-permission="'order:approve'" link type="warning" @click="handleReceive(row)" v-if="row.status === 'APPROVED'">到货</el-button>
@@ -116,6 +117,10 @@ const handleReceive = async (row) => {
 
 const handleInbound = (row) => {
   router.push({ path: '/purchase/inbound', query: { id: String(row.id) } })
+}
+
+const handleDetail = (row) => {
+  router.push({ path: `/purchase/order/${row.id}/detail` })
 }
 
 const handleImport = async ({ file }) => {

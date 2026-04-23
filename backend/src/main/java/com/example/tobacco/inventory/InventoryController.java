@@ -27,8 +27,9 @@ public class InventoryController {
 
     @GetMapping("/inventory-records")
     public ApiResponse<List<InventoryRecordItem>> records(@RequestParam(required = false) Long warehouseId,
-                                                          @RequestParam(required = false) String bizType) {
-        return ApiResponse.success(inventoryService.records(warehouseId, bizType));
+                                                          @RequestParam(required = false) String bizType,
+                                                          @RequestParam(required = false) String keyword) {
+        return ApiResponse.success(inventoryService.records(warehouseId, bizType, keyword));
     }
 
     @GetMapping("/inventory-warnings")

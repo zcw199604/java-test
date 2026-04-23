@@ -30,8 +30,8 @@
 
 ### 库存与追溯
 - `inventories`：库存台账，当前以 `product_id + warehouse_id` 为唯一库存单元
-- `inventory_records`：库存流水，记录入库、出库、调拨、盘点与来源/目标仓
-- `trace_records`：业务追溯节点
+- `inventory_records`：库存流水，记录采购入库、销售出库、调拨、盘点与来源/目标仓，是库存变化主台账
+- `trace_records`：统一业务追溯节点，当前覆盖采购、销售、库存调拨、库存盘点等动作
 - `abnormal_documents`：异常单据
 - `messages`：站内消息
 - `login_logs` / `operation_logs`：登录日志与操作日志
@@ -69,3 +69,9 @@
 - `inventory_records` 已支持 `warehouse_id`、`from_warehouse_id`、`to_warehouse_id` 等仓库轨迹字段
 - `purchase_orders` 与 `sales_orders` 已扩展 `warehouse_id / warehouse_name`
 - `data.sql` 会在启动时先清空核心业务表，再重新插入演示账号、仓库、商品与业务单据
+
+
+## 追溯模型说明
+- `trace_records` 承载业务节点视角，适合查看审核、到货、入库、出库、调拨、盘点等流程事件。
+- `inventory_records` 承载库存变化视角，适合查看商品在具体仓库中的 beforeQty / afterQty 变化。
+- `GET /api/reports/compliance-trace` 会对两类记录做统一查询聚合；`GET /api/inventory-records` 保留原始库存台账查询。

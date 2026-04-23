@@ -4,6 +4,7 @@ import com.example.tobacco.model.TrendPoint;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.SelectProvider;
 import org.apache.ibatis.annotations.Update;
 
 import java.math.BigDecimal;
@@ -40,8 +41,11 @@ public interface ReportMapper {
     @Select("select ifnull(sum(total_amount - paid_amount),0) from sales_orders")
     BigDecimal sumReceivableAmount();
 
-    @Select("select id, biz_type as bizType, biz_id as bizId, order_no as orderNo, node_code as nodeCode, node_name as nodeName, operator, remark, DATE_FORMAT(created_at,'%Y-%m-%d %H:%i:%s') as createdAt from trace_records order by id desc")
-    List<Map<String, Object>> selectComplianceTrace();
+    @SelectProvider(type = ReportSqlProvider.class, method = "buildComplianceTraceSql")
+    List<Map<String, Object>> selectComplianceTrace(@Param("keywordLike") String keywordLike,
+                                                    @Param("warehouseId") Long warehouseId,
+                                                    @Param("bizType") String bizType,
+                                                    @Param("nodeCode") String nodeCode);
 
     @Select("select id, biz_type as bizType, biz_id as bizId, order_no as orderNo, abnormal_type as abnormalType, status, reported_by as reportedBy, audited_by as auditedBy, detail, DATE_FORMAT(created_at,'%Y-%m-%d %H:%i:%s') as createdAt from abnormal_documents order by id desc")
     List<Map<String, Object>> selectAbnormalDocs();

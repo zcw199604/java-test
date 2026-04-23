@@ -37,7 +37,12 @@ public class ReportController {
     public ApiResponse<Map<String, Object>> psiSummary() { return ApiResponse.success(reportService.psiSummary()); }
 
     @GetMapping("/compliance-trace")
-    public ApiResponse<List<Map<String, Object>>> complianceTrace() { return ApiResponse.success(reportService.complianceTrace()); }
+    public ApiResponse<List<Map<String, Object>>> complianceTrace(@RequestParam(required = false) String keyword,
+                                                                  @RequestParam(required = false) Long warehouseId,
+                                                                  @RequestParam(required = false) String bizType,
+                                                                  @RequestParam(required = false) String nodeCode) {
+        return ApiResponse.success(reportService.complianceTrace(keyword, warehouseId, bizType, nodeCode));
+    }
 
     @GetMapping("/abnormal-docs")
     public ApiResponse<List<Map<String, Object>>> abnormalDocs() { return ApiResponse.success(reportService.abnormalDocs()); }

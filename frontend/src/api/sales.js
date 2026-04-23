@@ -2,6 +2,7 @@ import http from './http'
 
 export const fetchSales = () => http.get('/sales')
 export const fetchSalesDetail = (id) => http.get(`/sales/${id}`)
+export const fetchSalesTrace = (id) => http.get(`/sales/${id}/trace`)
 export const createSales = (payload) => http.post('/sales', payload)
 export const updateSales = (id, payload) => http.put(`/sales/${id}`, payload)
 export const outboundSales = (id, payload = {}) => http.post(`/sales/${id}/outbound`, payload)

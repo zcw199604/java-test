@@ -13,6 +13,7 @@
       <AppTable :columns="columns" :rows="rows">
         <template #status="{ value }"><el-tag :type="statusTypeMap[value] || 'info'">{{ statusLabelMap[value] || value }}</el-tag></template>
         <template #actions="{ row }">
+          <el-button v-permission="'sale:view'" link type="info" @click="handleDetail(row)">详情</el-button>
           <el-button v-permission="'order:approve'" link type="primary" @click="openAuditDialog(row)" v-if="row.status === 'CREATED'">审核</el-button>
           <el-button v-permission="'sale:edit'" link type="danger" @click="handleCancel(row)" v-if="row.status === 'CREATED' || row.status === 'REJECTED'">取消</el-button>
           <el-button v-permission="'order:approve'" link type="warning" @click="handleOutbound(row)" v-if="row.status === 'APPROVED'">出库</el-button>
@@ -53,7 +54,7 @@ const auditDialogVisible = ref(false)
 const auditTarget = ref(null)
 const auditRemark = ref('')
 
-const columns = [{ key: 'orderNo', label: '订单号' }, { key: 'customerName', label: '客户' }, { key: 'productName', label: '商品' }, { key: 'totalAmount', label: '订单金额' }, { key: 'paidAmount', label: '回款金额' }, { key: 'status', label: '回款状态' }]
+const columns = [{ key: 'orderNo', label: '订单号' }, { key: 'customerName', label: '客户' }, { key: 'productName', label: '商品' }, { key: 'totalAmount', label: '订单金额' }, { key: 'paidAmount', label: '回款金额' }, { key: 'status', label: '订单状态' }]
 
 const loadData = async () => {
   const result = await fetchSales().catch(() => ({ data: [] }))
@@ -83,6 +84,10 @@ const handleCancel = async (row) => {
 
 const handleOutbound = (row) => {
   router.push({ path: '/sale/outbound', query: { id: String(row.id) } })
+}
+
+const handleDetail = (row) => {
+  router.push({ path: `/sale/order/${row.id}/detail` })
 }
 
 const handlePayment = async (row) => {

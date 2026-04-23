@@ -16,12 +16,13 @@
 
 ## 当前实现
 - `GET /api/inventories` 支持 `warehouseId`、`keyword`、`status`
-- `GET /api/inventory-records` 支持 `warehouseId`、`bizType`
+- `GET /api/inventory-records` 支持 `warehouseId`、`bizType`、`keyword`
 - `GET /api/inventory-warnings` 支持按仓筛选
-- 调拨会拆分写入 `TRANSFER_OUT` / `TRANSFER_IN` 两条流水
-- 盘点会按指定仓库直接更新当前库存数量
+- 调拨会拆分写入 `TRANSFER_OUT` / `TRANSFER_IN` 两条流水，并同步进入统一追溯节点
+- 盘点会按指定仓库直接更新当前库存数量，并同步进入统一追溯节点
 
 ## 最新变更
 - 库存模型已从单仓升级为多仓
 - 采购入库、销售出库、调拨、盘点均复用统一库存预警通知逻辑
-- 页面侧已支持仓库筛选、仓库选择和多仓流水中文展示
+- 页面侧已支持仓库筛选、关键字筛选、类型筛选和多仓流水中文展示
+- 库存追溯台账当前聚焦库存变化视角，统一业务节点由合规追溯页承载

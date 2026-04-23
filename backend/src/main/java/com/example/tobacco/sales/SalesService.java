@@ -45,6 +45,12 @@ public class SalesService {
         return item;
     }
 
+    public List<Map<String, Object>> trace(Long id, String username, String roleCode) {
+        SalesOrderItem item = loadDetail(id);
+        validateOwnership(item, username, roleCode);
+        return salesMapper.trace(id, item.getOrderNo());
+    }
+
     @Transactional
     public SalesOrderItem create(CreateSalesRequest request, String username) {
         BigDecimal total = request.getUnitPrice().multiply(new BigDecimal(request.getQuantity())).setScale(2, java.math.RoundingMode.HALF_UP);

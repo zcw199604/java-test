@@ -107,6 +107,12 @@ export const asyncChildren: RouteRecordRaw[] = [
     meta: { title: '编辑采购单', description: '读取真实采购详情并兼容更新提交流程。', hideInMenu: true, permission: 'purchase:edit' }
   },
   {
+    path: '/purchase/order/:id/detail',
+    name: 'purchase-order-detail',
+    component: () => import('../views/purchase/PurchaseOrderFormView.vue'),
+    meta: { title: '采购单详情', description: '查看采购单明细、状态与关键字段。', hideInMenu: true, permission: 'purchase:view' }
+  },
+  {
     path: '/purchase/inbound',
     name: 'purchase-inbound',
     component: () => import('../views/purchase/PurchaseInboundView.vue'),
@@ -135,6 +141,18 @@ export const asyncChildren: RouteRecordRaw[] = [
     name: 'sale-order-edit',
     component: () => import('../views/sale/SaleOrderFormView.vue'),
     meta: { title: '编辑销售单', description: '读取真实销售详情并兼容更新提交流程。', hideInMenu: true, permission: 'sale:edit' }
+  },
+  {
+    path: '/sale/order/:id/detail',
+    name: 'sale-order-detail',
+    component: () => import('../views/sale/SaleOrderFormView.vue'),
+    meta: { title: '销售单详情', description: '查看销售单明细、状态与回款字段。', hideInMenu: true, permission: 'sale:view' }
+  },
+  {
+    path: '/sale/outbound',
+    name: 'sale-outbound',
+    component: () => import('../views/sale/SaleOutboundView.vue'),
+    meta: { title: '销售出库', description: '选择仓库并完成销售出库确认。', hideInMenu: true, permission: 'order:approve' }
   },
   {
     path: '/sale/performance',

@@ -33,7 +33,7 @@ class PlatformIntegrationTest {
     void shouldRunTaskbookAlignedBusinessFlow() throws Exception {
         MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\"admin\",\"password\":\"033a4de787e4383ba6e204364b23ed5adca533e3c70b1f76ba53bac28796a5ac\"}"))
+                        .content("{\"username\":\"admin\",\"password\":\"123456\"}"))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -181,6 +181,22 @@ class PlatformIntegrationTest {
                 .andReturn();
         assertThat(objectMapper.readTree(inventoryCheckResult.getResponse().getContentAsString()).path("data").asText()).isEqualTo("盘点结果已更新");
 
+        MvcResult filteredTraceResult = mockMvc.perform(get("/api/reports/compliance-trace").header("Authorization", bearer(token))
+                        .param("warehouseId", "2")
+                        .param("bizType", "INVENTORY")
+                        .param("keyword", "东区仓"))
+                .andExpect(status().isOk())
+                .andReturn();
+        String filteredTraceBody = filteredTraceResult.getResponse().getContentAsString();
+        assertThat(filteredTraceBody).contains("TRANSFER_OUT", "PURCHASE_INBOUND", "SALES_OUTBOUND");
+
+        MvcResult checkTraceResult = mockMvc.perform(get("/api/reports/compliance-trace").header("Authorization", bearer(token))
+                        .param("bizType", "INVENTORY")
+                        .param("nodeCode", "CHECK"))
+                .andExpect(status().isOk())
+                .andReturn();
+        assertThat(checkTraceResult.getResponse().getContentAsString()).contains("库存盘点", "测试盘点");
+
         MvcResult exportResult = mockMvc.perform(get("/api/reports/export").header("Authorization", bearer(token)))
                 .andExpect(status().isOk())
                 .andReturn();
@@ -269,7 +285,7 @@ class PlatformIntegrationTest {
     private String loginAsAdmin() throws Exception {
         MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\"admin\",\"password\":\"033a4de787e4383ba6e204364b23ed5adca533e3c70b1f76ba53bac28796a5ac\"}"))
+                        .content("{\"username\":\"admin\",\"password\":\"123456\"}"))
                 .andExpect(status().isOk())
                 .andReturn();
         JsonNode loginJson = objectMapper.readTree(loginResult.getResponse().getContentAsString());

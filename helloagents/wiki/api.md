@@ -84,6 +84,7 @@
 - `GET /api/purchases/requisitions`
   - 与 `GET /api/purchase-requisitions` 一致，当前均返回采购单列表
 - `GET /api/purchases/{id}`
+  - 供采购单详情页 / 编辑页复用，拥有查看权限的角色可访问
 - `GET /api/purchases/{id}/trace`
 - `POST /api/purchases`
 - `PUT /api/purchases/{id}`
@@ -99,6 +100,9 @@
 - `POST /api/bulletins`
 - `GET /api/sales`
 - `GET /api/sales/{id}`
+  - 供销售单详情页 / 编辑页复用，拥有查看权限的角色可访问
+- `GET /api/sales/{id}/trace`
+  - 返回创建、审核、出库、回款等流程节点时间线，供销售单详情页展示
 - `POST /api/sales`
 - `PUT /api/sales/{id}`
 - `POST /api/sales/{id}/audit`
@@ -114,7 +118,7 @@
 - `GET /api/inventories`
   - 支持参数：`warehouseId`、`keyword`、`status`
 - `GET /api/inventory-records`
-  - 支持参数：`warehouseId`、`bizType`
+  - 支持参数：`warehouseId`、`bizType`、`keyword`
 - `GET /api/inventory-warnings`
   - 支持参数：`warehouseId`
 - `POST /api/inventory-transfers`
@@ -133,6 +137,7 @@
 - `GET /api/reports/trend`
 - `GET /api/reports/psi-summary`
 - `GET /api/reports/compliance-trace`
+  - 支持参数：`keyword`、`warehouseId`、`bizType`、`nodeCode`
 - `GET /api/reports/abnormal-docs`
 - `POST /api/reports/abnormal-docs/{id}/audit`
 - `GET /api/reports/linkage`
@@ -143,5 +148,6 @@
 
 ## 当前实现说明
 - 采购、销售、库存导入接口均限制单文件 `<= 5MB`、单次 `<= 1000` 行
-- 审核、到货、入库、出库等关键动作会写入操作日志与追溯记录
+- 审核、到货、入库、出库、调拨、盘点等关键动作会写入操作日志与追溯记录
+- `GET /api/reports/compliance-trace` 当前会统一聚合 `trace_records` 与 `inventory_records`，同时提供业务节点与库存变化视角
 - 当前不存在 `GET /api/purchases/export`、`GET /api/sales/export`、`GET /api/inventories/export`、`GET /api/inventory-warnings/history`、`GET /api/purchases/analysis` 等运行时接口

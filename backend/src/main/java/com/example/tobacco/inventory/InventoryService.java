@@ -33,8 +33,8 @@ public class InventoryService {
         return inventoryMapper.list(warehouseId, likeValue(keyword), trim(status));
     }
 
-    public List<InventoryRecordItem> records(Long warehouseId, String bizType) {
-        return inventoryMapper.records(warehouseId, trim(bizType));
+    public List<InventoryRecordItem> records(Long warehouseId, String bizType, String keyword) {
+        return inventoryMapper.records(warehouseId, trim(bizType), likeValue(keyword));
     }
 
     public List<InventoryItem> warnings(Long warehouseId) {
@@ -71,6 +71,8 @@ public class InventoryService {
 
         inventoryMapper.insertRecord(request.getProductId(), "TRANSFER_OUT", null, fromWarehouseId, fromWarehouseName, fromWarehouseId, fromWarehouseName, toWarehouseId, toWarehouseName, -changeQty, beforeQty, afterQty, operatorName, request.getRemark());
         inventoryMapper.insertRecord(request.getProductId(), "TRANSFER_IN", null, toWarehouseId, toWarehouseName, fromWarehouseId, fromWarehouseName, toWarehouseId, toWarehouseName, changeQty, toBeforeQty == null ? 0 : toBeforeQty, toAfterQty, operatorName, request.getRemark());
+        auditService.trace("INVENTORY", request.getProductId(), null, "TRANSFER", "库存调拨", operatorName,
+                fromWarehouseName + " -> " + toWarehouseName + "，数量: " + changeQty + "，备注: " + request.getRemark());
         auditService.logOperation(findUserIdByUsername(operatorName), operatorName, "INVENTORY", "TRANSFER", "INVENTORY", request.getProductId(),
                 "库存调拨，数量:" + changeQty + "，" + fromWarehouseName + " -> " + toWarehouseName);
         checkAndNotifyWarning(request.getProductId(), fromWarehouseName, afterQty, threshold == null ? 0 : threshold);
@@ -89,6 +91,8 @@ public class InventoryService {
         int afterQty = request.getQuantity();
         inventoryMapper.updateQuantity(request.getProductId(), warehouseId, afterQty);
         inventoryMapper.insertRecord(request.getProductId(), "CHECK", null, warehouseId, warehouseName, null, null, null, null, afterQty - beforeQty, beforeQty, afterQty, operatorName, request.getRemark());
+        auditService.trace("INVENTORY", request.getProductId(), null, "CHECK", "库存盘点", operatorName,
+                warehouseName + "，账面: " + beforeQty + "，实盘: " + afterQty + "，备注: " + request.getRemark());
         auditService.logOperation(findUserIdByUsername(operatorName), operatorName, "INVENTORY", "CHECK", "INVENTORY", request.getProductId(), "库存盘点，结果:" + afterQty + "，仓库:" + warehouseName);
         Integer threshold = inventoryMapper.selectWarningThreshold(request.getProductId(), warehouseId);
         checkAndNotifyWarning(request.getProductId(), warehouseName, afterQty, threshold == null ? 0 : threshold);

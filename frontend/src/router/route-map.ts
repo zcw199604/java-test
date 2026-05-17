@@ -125,6 +125,12 @@ export const asyncChildren: RouteRecordRaw[] = [
     meta: { title: '采购分析', description: '查看采购结构和供应商占比。', icon: 'PieChart', group: 'purchase', permission: 'purchase:view' }
   },
   {
+    path: '/sale/bulletin',
+    name: 'sale-bulletin',
+    component: () => import('../views/sale/SaleBulletinView.vue'),
+    meta: { title: '销售信息发布', description: '发布销售公告和促销信息。', icon: 'ChatLineSquare', group: 'sale', permission: 'bulletin:view' }
+  },
+  {
     path: '/sale/order',
     name: 'sale-order',
     component: () => import('../views/sale/SaleOrderListView.vue'),
@@ -159,12 +165,6 @@ export const asyncChildren: RouteRecordRaw[] = [
     name: 'sale-performance',
     component: () => import('../views/sale/SalePerformanceView.vue'),
     meta: { title: '销售绩效', description: '查看销售趋势、达成率和区域表现。', icon: 'TrendCharts', group: 'sale', permission: 'sale:view' }
-  },
-  {
-    path: '/sale/bulletin',
-    name: 'sale-bulletin',
-    component: () => import('../views/sale/SaleBulletinView.vue'),
-    meta: { title: '销售信息发布', description: '发布销售公告和促销信息。', icon: 'ChatLineSquare', group: 'sale', permission: 'bulletin:view' }
   },
   {
     path: '/inventory/list',

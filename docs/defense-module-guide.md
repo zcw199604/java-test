@@ -1925,3 +1925,1031 @@ http://localhost:5173
 ```
 
 记住这条线，答辩时就不会乱。
+
+---
+
+## 28. 写“一个页面实现过程”的万能公式
+
+如果老师要求你写文档，题目类似：
+
+```text
+请说明某某页面的实现过程。
+```
+
+你不要只写“我用了 Vue 写页面”，这样太空。要按下面 8 个部分写：
+
+```text
+1. 页面作用
+2. 页面入口
+3. 页面结构
+4. 页面数据来源
+5. 用户操作
+6. 前后端接口
+7. 后端处理
+8. 数据库操作
+```
+
+### 28.1 页面实现过程通用模板
+
+可以直接复制这个模板，把里面的【】替换成具体模块：
+
+```text
+【页面名称】主要用于【说明页面功能】，用户可以在该页面完成【查询/新增/编辑/删除/审核/导入/导出】等操作。
+
+该页面的前端文件位于【frontend/src/views/xxx/XxxView.vue】。页面通过 Vue 组件组织界面结构，主要包括【搜索区域/表格区域/表单区域/弹窗区域/操作按钮】。页面加载时会执行【loadData/onMounted】方法，调用前端接口文件【frontend/src/api/xxx.js】中的【接口方法】获取数据。
+
+前端接口方法基于 Axios 封装，请求会先经过【frontend/src/api/http.ts】。该文件统一配置了接口基础路径 `/api`，并在请求头中自动携带登录 token。请求发送到后端后，由【XxxController】接收。
+
+后端 Controller 负责接收参数并调用【XxxService】。Service 层负责核心业务逻辑，例如【状态校验/权限校验/金额计算/库存判断/数据格式处理】。如果需要访问数据库，Service 会调用【XxxMapper】。Mapper 使用 MyBatis 执行 SQL，对【表名】进行查询、新增、修改或删除。
+
+处理完成后，后端通过统一的【ApiResponse】返回结果。前端收到结果后更新页面数据，例如刷新表格、关闭弹窗、显示成功或失败提示。
+```
+
+### 28.2 页面实现过程简短版
+
+如果答辩时间很短，可以这样说：
+
+```text
+这个页面前端写在 XxxView.vue 中，页面加载时调用 api/xxx.js 里的接口方法获取数据。接口请求经过 http.ts 统一添加 token 后发送到后端。后端由 XxxController 接收请求，调用 XxxService 处理业务逻辑，再通过 XxxMapper 操作数据库。最后后端返回 ApiResponse，前端根据返回结果刷新页面。
+```
+
+### 28.3 页面实现过程详细版
+
+如果老师让你“详细讲”，可以这样展开：
+
+```text
+首先，从前端入口看，这个页面由路由 route-map.ts 配置，用户访问指定路径时，Vue Router 会加载对应的 XxxView.vue 页面。
+
+其次，从页面结构看，XxxView.vue 中 template 部分负责页面布局，包括查询表单、数据表格、操作按钮和弹窗；script setup 部分负责定义页面变量、加载数据方法和按钮事件方法。
+
+然后，从接口调用看，页面不会直接写完整后端地址，而是调用 api/xxx.js 中封装的方法。这样可以把页面逻辑和请求路径分开，便于维护。
+
+接着，从后端处理看，请求会进入 XxxController。Controller 接收参数后调用 XxxService。Service 负责核心业务规则，例如校验状态是否允许操作、判断当前用户是否有权限、计算金额或库存数量。
+
+最后，从数据库操作看，Service 调用 XxxMapper 执行 SQL，读取或修改数据库表。数据库处理完成后，后端统一返回 ApiResponse，前端收到结果后刷新列表或显示提示。
+```
+
+---
+
+## 29. 写“一个模块实现过程”的万能公式
+
+页面通常只讲一个界面；模块要讲多个页面、多个接口和完整业务流程。
+
+比如：
+
+```text
+销售模块
+采购模块
+库存模块
+商品模块
+系统管理模块
+报表模块
+```
+
+模块实现过程建议按 9 个部分写：
+
+```text
+1. 模块目标
+2. 模块包含哪些页面
+3. 模块包含哪些接口
+4. 模块对应哪些后端类
+5. 模块对应哪些数据库表
+6. 核心业务流程
+7. 数据状态变化
+8. 权限和校验
+9. 操作完成后的返回和展示
+```
+
+### 29.1 模块实现过程通用模板
+
+```text
+【模块名称】主要用于【模块作用】，解决【业务问题】。该模块前端页面主要位于【frontend/src/views/xxx】目录下，包括【页面1、页面2、页面3】。前端接口统一封装在【frontend/src/api/xxx.js】中。
+
+从前端实现看，用户进入页面后，页面会调用接口加载基础数据或业务列表。用户点击新增、编辑、审核、删除等按钮时，页面会触发对应事件方法，并调用 api 文件中的接口方法向后端发送请求。
+
+从后端实现看，该模块对应【XxxController】、【XxxService】和【XxxMapper】。Controller 负责接收请求，Service 负责业务逻辑，Mapper 负责数据库访问。
+
+从数据库实现看，该模块主要涉及【表1、表2、表3】。其中【主表】保存核心业务数据，【明细表/日志表/流水表】保存业务过程和操作记录。
+
+从业务流程看，模块按照【步骤1 -> 步骤2 -> 步骤3】执行。每一步都会在后端 Service 中进行状态校验和权限校验，保证业务数据合法。处理完成后，系统统一返回 ApiResponse，前端根据返回结果刷新页面。
+```
+
+### 29.2 模块实现过程答辩口语版
+
+```text
+我讲这个模块时，会从前端、接口、后端和数据库四个角度说明。
+
+前端负责页面展示和按钮操作；api 文件负责请求后端；Controller 负责接收请求；Service 负责处理业务规则；Mapper 负责操作数据库。整个模块不是单独一个页面，而是由多个页面和多组接口共同完成一个业务流程。
+```
+
+---
+
+## 30. 示例一：商品管理页面怎么说
+
+商品管理页面比较适合讲“基础资料维护”，它比销售、采购简单，适合小白答辩时备用。
+
+### 30.1 涉及文件
+
+前端页面：
+
+```text
+frontend/src/views/catalog/ProductListView.vue
+```
+
+前端接口：
+
+```text
+frontend/src/api/catalog.js
+```
+
+后端接口：
+
+```text
+backend/src/main/java/com/example/tobacco/catalog/CatalogController.java
+```
+
+后端业务：
+
+```text
+backend/src/main/java/com/example/tobacco/catalog/CatalogService.java
+```
+
+数据库操作：
+
+```text
+backend/src/main/java/com/example/tobacco/mapper/catalog/CatalogMapper.java
+backend/src/main/java/com/example/tobacco/mapper/catalog/CatalogSqlProvider.java
+```
+
+数据库表：
+
+```text
+products
+categories
+```
+
+### 30.2 商品管理页面功能
+
+商品管理页面一般包括：
+
+```text
+商品列表查询
+按关键字查询
+按分类筛选
+按状态筛选
+新增商品
+编辑商品
+禁用商品
+维护预警阈值
+```
+
+### 30.3 商品列表查询流程
+
+```text
+打开商品管理页面
+  -> ProductListView.vue 加载
+  -> 调用 fetchProducts(params)
+  -> GET /api/products
+  -> CatalogController.listProducts()
+  -> CatalogService.listProducts()
+  -> CatalogMapper 查询 products 表
+  -> 返回商品列表
+  -> 前端表格展示
+```
+
+答辩可说：
+
+> 商品管理页面主要用于维护商品基础资料。前端页面在 `ProductListView.vue`，页面加载时调用 `catalog.js` 中的 `fetchProducts` 方法，请求后端 `/api/products` 接口。后端由 `CatalogController.listProducts` 接收请求，再调用 `CatalogService` 处理查询条件，最后通过 `CatalogMapper` 查询 `products` 表，并把商品列表返回给前端展示。
+
+### 30.4 新增商品流程
+
+```text
+点击新增商品
+  -> 打开商品表单
+  -> 输入商品编码、名称、分类、单位、价格、预警阈值
+  -> createProduct(payload)
+  -> POST /api/products
+  -> CatalogController.createProduct()
+  -> CatalogService.createProduct()
+  -> 校验商品编码是否重复
+  -> CatalogMapper 插入 products 表
+  -> 返回成功
+  -> 前端刷新列表
+```
+
+答辩可说：
+
+> 新增商品时，前端把表单中的商品编码、名称、分类、单位、价格和预警阈值提交给后端。后端 Service 会先做基础校验，例如商品编码不能重复，然后调用 Mapper 插入 `products` 表。新增成功后，前端刷新商品列表。
+
+### 30.5 禁用商品流程
+
+```text
+点击禁用
+  -> disableProduct(id)
+  -> DELETE /api/products/{id}
+  -> CatalogController.deleteProduct()
+  -> CatalogService.deleteProduct()
+  -> 更新 products.status
+  -> 返回成功
+```
+
+答辩可说：
+
+> 商品删除在系统中通常不是物理删除，而是修改状态为禁用。这样可以避免已经被采购单、销售单引用的商品数据丢失，保证历史业务记录仍然完整。
+
+---
+
+## 31. 示例二：采购订单页面怎么说
+
+采购订单页面适合讲“订单状态流转”。
+
+### 31.1 涉及文件
+
+```text
+前端页面:
+frontend/src/views/purchase/PurchaseOrderListView.vue
+frontend/src/views/purchase/PurchaseOrderFormView.vue
+frontend/src/views/purchase/PurchaseInboundView.vue
+
+前端接口:
+frontend/src/api/purchase.js
+
+后端接口:
+backend/src/main/java/com/example/tobacco/purchase/PurchaseController.java
+
+后端业务:
+backend/src/main/java/com/example/tobacco/purchase/PurchaseService.java
+
+数据库操作:
+backend/src/main/java/com/example/tobacco/mapper/purchase/PurchaseMapper.java
+
+数据库表:
+purchase_orders
+inventories
+inventory_records
+trace_records
+operation_logs
+```
+
+### 31.2 采购订单主流程
+
+```text
+新建采购单
+  -> 审核
+  -> 到货
+  -> 入库
+  -> 增加库存
+```
+
+状态变化：
+
+```text
+CREATED -> APPROVED -> RECEIVED -> INBOUND
+```
+
+### 31.3 采购订单列表页面实现过程
+
+```text
+打开 /purchase/order
+  -> PurchaseOrderListView.vue
+  -> 调用 purchase.js 查询采购订单
+  -> GET /api/purchases
+  -> PurchaseController.list()
+  -> PurchaseService.list()
+  -> PurchaseMapper 查询 purchase_orders
+  -> 返回采购订单列表
+```
+
+答辩可说：
+
+> 采购订单列表用于展示采购单的状态和操作入口。页面加载时调用前端采购 API，请求 `/api/purchases`。后端 `PurchaseController` 接收后调用 `PurchaseService.list`，Service 再通过 `PurchaseMapper` 查询 `purchase_orders` 表，并返回给前端表格展示。
+
+### 31.4 采购入库页面实现过程
+
+```text
+进入采购入库页面
+  -> 查询待入库采购单
+  -> 用户选择仓库
+  -> 点击入库
+  -> POST /api/purchases/{id}/inbound
+  -> PurchaseController.inbound()
+  -> PurchaseService.inbound()
+  -> 校验采购单是否允许入库
+  -> 更新采购单状态
+  -> 增加库存
+  -> 插入库存流水
+  -> 写追溯记录
+  -> 返回成功
+```
+
+答辩可说：
+
+> 采购入库是采购模块和库存模块的衔接点。采购单入库后，不只是修改采购单状态，还要增加对应仓库的商品库存，并写入库存流水。这样系统既能看到当前库存，也能追溯库存是由哪张采购单增加的。
+
+### 31.5 采购模块容易被问的问题
+
+问题：
+
+```text
+为什么采购单不能直接入库？
+```
+
+回答：
+
+> 因为采购业务需要有状态流转。采购单创建后需要先审核，审核通过后才能到货和入库。这样可以避免未审核的采购单直接影响库存数据。
+
+问题：
+
+```text
+采购入库为什么要写库存流水？
+```
+
+回答：
+
+> 因为库存表只保存当前库存，不保存变化原因。库存流水可以记录这次库存增加来自哪张采购单、增加了多少、入库前后库存是多少、操作人是谁，方便后续追溯。
+
+---
+
+## 32. 示例三：库存调拨页面怎么说
+
+库存调拨适合讲“一个操作同时修改两条库存数据”。
+
+### 32.1 涉及文件
+
+```text
+前端页面:
+frontend/src/views/inventory/InventoryListView.vue
+frontend/src/views/inventory/InventoryFlowView.vue
+
+前端接口:
+frontend/src/api/inventory.js
+
+后端接口:
+backend/src/main/java/com/example/tobacco/inventory/InventoryController.java
+
+后端业务:
+backend/src/main/java/com/example/tobacco/inventory/InventoryService.java
+
+数据库操作:
+backend/src/main/java/com/example/tobacco/mapper/inventory/InventoryMapper.java
+
+数据库表:
+inventories
+inventory_records
+warehouses
+products
+```
+
+### 32.2 库存调拨业务含义
+
+库存调拨就是：
+
+```text
+把某个商品从一个仓库转到另一个仓库。
+```
+
+例如：
+
+```text
+把 A 商品从中心仓调 20 件到分仓。
+```
+
+它不会改变全系统总库存，只改变不同仓库之间的库存分布。
+
+### 32.3 库存调拨实现流程
+
+```text
+用户选择商品
+  -> 选择源仓库
+  -> 选择目标仓库
+  -> 输入调拨数量
+  -> POST /api/inventory-transfers
+  -> InventoryController.transfer()
+  -> InventoryService.transfer()
+  -> 校验源仓库和目标仓库不能相同
+  -> 查询源仓库库存
+  -> 判断库存是否足够
+  -> 源仓库库存减少
+  -> 目标仓库库存增加
+  -> 写入 inventory_records
+  -> 返回成功
+```
+
+答辩可说：
+
+> 库存调拨的核心是同时更新两个仓库的库存。Service 会先校验源仓库库存是否足够，如果足够，就减少源仓库库存，同时增加目标仓库库存。为了保证后续可追溯，还会写入库存流水，记录从哪个仓库调出、调入哪个仓库、调拨数量和操作人。
+
+### 32.4 为什么调拨要放在 Service 层
+
+答辩可说：
+
+> 库存调拨不是简单的一条 SQL，它包含多个业务步骤：校验仓库、校验库存、扣减源仓库、增加目标仓库、写流水。这些步骤必须作为一个完整业务处理，所以放在 Service 层，并通过事务保证要么全部成功，要么全部失败。
+
+---
+
+## 33. 示例四：登录页面和权限模块怎么说
+
+登录权限模块适合讲“系统安全”。
+
+### 33.1 涉及文件
+
+```text
+前端页面:
+frontend/src/views/auth/LoginView.vue
+
+前端接口:
+frontend/src/api/auth.ts
+frontend/src/api/http.ts
+
+后端接口:
+backend/src/main/java/com/example/tobacco/auth/AuthController.java
+
+后端业务:
+backend/src/main/java/com/example/tobacco/auth/AuthService.java
+backend/src/main/java/com/example/tobacco/auth/ShiroRealm.java
+
+拦截器:
+backend/src/main/java/com/example/tobacco/interceptor/AuthInterceptor.java
+
+配置:
+backend/src/main/java/com/example/tobacco/config/ShiroConfig.java
+backend/src/main/java/com/example/tobacco/config/WebConfig.java
+
+数据库表:
+users
+roles
+permissions
+role_permissions
+user_sessions
+login_logs
+captcha_records
+```
+
+### 33.2 登录页面实现流程
+
+```text
+用户打开登录页
+  -> LoginView.vue
+  -> 获取验证码
+  -> 用户输入账号、密码、验证码
+  -> POST /api/auth/login
+  -> AuthController.login()
+  -> AuthService.login()
+  -> 校验验证码
+  -> 校验账号密码
+  -> 查询用户角色和权限
+  -> 生成 token
+  -> 写入 user_sessions
+  -> 写入 login_logs
+  -> 返回用户信息和 token
+  -> 前端保存 token
+  -> 跳转系统首页
+```
+
+答辩可说：
+
+> 登录页面负责收集账号、密码和验证码。提交后，请求进入 `AuthController.login`，再由 `AuthService` 校验验证码和账号密码。登录成功后，后端生成 token 并写入 `user_sessions` 表，前端保存 token。之后每次请求，前端都会通过 `http.ts` 自动把 token 放到请求头里。
+
+### 33.3 登录后访问接口流程
+
+```text
+前端请求业务接口
+  -> http.ts 自动添加 Authorization
+  -> 后端 AuthInterceptor 拦截请求
+  -> 校验 token 是否存在
+  -> 查询 user_sessions 是否有效
+  -> 获取用户信息和角色
+  -> 放入 request attribute
+  -> 业务 Controller 获取当前用户
+```
+
+答辩可说：
+
+> 用户登录后，前端每次请求都会携带 `Authorization: Bearer token`。后端拦截器会校验 token 是否有效，并从数据库会话表中读取用户信息。如果 token 无效，就返回未登录；如果有效，就把用户名和角色信息放到请求对象中，后续业务接口就能知道当前操作人是谁。
+
+### 33.4 页面权限和按钮权限
+
+前端权限主要控制：
+
+```text
+菜单能不能看到
+页面能不能访问
+按钮能不能显示
+```
+
+涉及文件：
+
+```text
+frontend/src/router/route-map.ts
+frontend/src/utils/access.ts
+frontend/src/directives/permission.ts
+```
+
+答辩可说：
+
+> 前端路由中配置了每个页面需要的权限标识。用户登录后，系统根据后端返回的权限列表过滤菜单。按钮级权限通过自定义指令控制，例如没有编辑权限的用户看不到新增、编辑、删除按钮。
+
+---
+
+## 34. 示例五：报表导出页面怎么说
+
+报表导出和普通 JSON 接口不一样，它返回的是 Excel 文件。
+
+### 34.1 涉及文件
+
+```text
+前端页面:
+frontend/src/views/report/ReportDashboardView.vue
+frontend/src/views/report/ReportView.vue
+
+前端接口:
+frontend/src/api/report.js
+
+后端接口:
+backend/src/main/java/com/example/tobacco/report/ReportController.java
+
+后端业务:
+backend/src/main/java/com/example/tobacco/report/ReportService.java
+
+工具类:
+backend/src/main/java/com/example/tobacco/util/ExcelUtil.java
+
+数据库操作:
+backend/src/main/java/com/example/tobacco/mapper/report/ReportMapper.java
+backend/src/main/java/com/example/tobacco/mapper/report/ReportSqlProvider.java
+```
+
+### 34.2 普通报表查询流程
+
+```text
+打开报表页面
+  -> 调用 fetchSalesSummary/fetchInventorySummary
+  -> GET /api/reports/sales-summary
+  -> ReportController
+  -> ReportService
+  -> ReportMapper 查询业务数据
+  -> 返回 ApiResponse
+  -> 前端展示统计卡片或图表
+```
+
+答辩可说：
+
+> 报表页面会调用多个报表接口获取采购、销售、库存等统计数据。后端 ReportService 汇总不同业务表的数据，再返回给前端展示成统计卡片和图表。
+
+### 34.3 Excel 导出流程
+
+```text
+用户点击导出
+  -> 前端调用 exportReport()
+  -> fetch 请求 /api/reports/export
+  -> 请求头携带 token
+  -> ReportController.exportData()
+  -> ReportService.exportExcel()
+  -> 使用 Apache POI 生成 Excel
+  -> 后端返回二进制文件流
+  -> 前端创建下载链接
+  -> 浏览器下载 report-summary.xlsx
+```
+
+答辩可说：
+
+> 报表导出接口和普通接口不同，普通接口返回 JSON，而导出接口返回 Excel 二进制文件流。前端使用 `fetch` 请求 `/api/reports/export`，后端通过 `ResponseEntity<byte[]>` 返回文件内容，并设置 `Content-Disposition` 和 Excel 的 `Content-Type`。前端拿到 blob 后创建下载链接，实现文件下载。
+
+### 34.4 为什么导出不用普通 ApiResponse
+
+答辩可说：
+
+> 普通业务接口返回 JSON，所以适合用 `ApiResponse`。但是 Excel 导出返回的是文件流，如果再包装成 JSON，浏览器无法直接下载文件。因此导出接口直接返回二进制内容，并设置响应头告诉浏览器这是一个 Excel 文件。
+
+---
+
+## 35. 示例六：消息中心页面怎么说
+
+消息中心适合讲“业务操作后的提醒机制”。
+
+### 35.1 涉及文件
+
+```text
+前端页面:
+frontend/src/views/message/MessageCenterView.vue
+
+前端接口:
+frontend/src/api/message.js
+
+后端接口:
+backend/src/main/java/com/example/tobacco/message/MessageController.java
+
+后端业务:
+backend/src/main/java/com/example/tobacco/message/MessageService.java
+
+数据库操作:
+backend/src/main/java/com/example/tobacco/mapper/message/MessageMapper.java
+
+数据库表:
+messages
+```
+
+### 35.2 消息产生场景
+
+系统会在一些关键业务动作后产生消息，例如：
+
+```text
+销售单审核通过
+销售单被驳回
+库存低于预警阈值
+异常单据需要处理
+```
+
+### 35.3 消息中心查询流程
+
+```text
+打开消息中心
+  -> MessageCenterView.vue
+  -> 调用 message.js 查询消息
+  -> MessageController 接收请求
+  -> MessageService 查询当前用户消息
+  -> MessageMapper 查询 messages 表
+  -> 返回消息列表
+  -> 前端展示未读/已读状态
+```
+
+答辩可说：
+
+> 消息中心用于集中展示系统通知和业务提醒。消息数据保存在 `messages` 表中，前端页面加载时请求消息接口，后端根据当前登录用户查询对应消息。比如销售单审核后，系统会给销售单创建人发送审核结果消息；库存不足时，会给库管发送库存预警消息。
+
+### 35.4 消息和业务模块的关系
+
+答辩可说：
+
+> 消息中心不是孤立模块，它和销售、库存、审核等业务模块有关。业务 Service 在完成关键操作后，会调用 `MessageService.createMessage` 创建消息，这样用户可以在消息中心看到业务提醒。
+
+---
+
+## 36. 示例七：角色权限页面怎么说
+
+角色权限适合讲“后台管理”和“权限配置”。
+
+### 36.1 涉及文件
+
+```text
+前端页面:
+frontend/src/views/admin/RolePermissionView.vue
+frontend/src/views/admin/AccountListView.vue
+
+前端接口:
+frontend/src/api/system.js
+
+后端接口:
+backend/src/main/java/com/example/tobacco/system/SystemController.java
+
+后端业务:
+backend/src/main/java/com/example/tobacco/system/SystemService.java
+
+数据库操作:
+backend/src/main/java/com/example/tobacco/mapper/system/SystemMapper.java
+backend/src/main/java/com/example/tobacco/mapper/system/SystemSqlProvider.java
+
+数据库表:
+users
+roles
+permissions
+role_permissions
+```
+
+### 36.2 角色权限实现流程
+
+```text
+管理员打开角色权限页面
+  -> 查询角色列表
+  -> 查询权限列表
+  -> 勾选某个角色拥有的权限
+  -> 提交保存
+  -> SystemController 接收请求
+  -> SystemService 校验角色和权限
+  -> SystemMapper 更新 role_permissions
+  -> 返回成功
+```
+
+答辩可说：
+
+> 角色权限模块用于维护不同角色能访问哪些页面、能使用哪些按钮。数据库中 `roles` 保存角色，`permissions` 保存权限点，`role_permissions` 保存角色和权限的对应关系。管理员在前端勾选权限后，后端会更新角色权限关联表。用户下次登录后，系统根据角色查询权限列表，再决定前端菜单和按钮的显示。
+
+### 36.3 权限为什么要拆成三张表
+
+答辩可说：
+
+> `roles` 表保存角色本身，比如管理员、销售员、库管；`permissions` 表保存具体权限，比如销售查看、销售编辑、库存编辑；`role_permissions` 表保存角色拥有哪些权限。这样设计比较灵活，一个角色可以有多个权限，一个权限也可以分配给多个角色。
+
+---
+
+## 37. 不同类型页面的讲法
+
+不同页面讲法不一样，答辩时可以按页面类型选择重点。
+
+### 37.1 列表页面怎么讲
+
+列表页面重点讲：
+
+```text
+查询条件
+表格字段
+分页或筛选
+操作按钮
+数据加载
+```
+
+答辩模板：
+
+```text
+这个列表页面主要用于展示【数据名称】。页面加载时会调用查询接口获取列表数据，查询条件包括【条件1、条件2】。后端根据查询参数拼接 SQL 或动态条件，从数据库中查出数据后返回给前端。前端将数据绑定到表格中，并根据每行数据状态显示不同操作按钮。
+```
+
+适用页面：
+
+```text
+销售订单列表
+采购订单列表
+商品列表
+客户列表
+供应商列表
+库存列表
+消息列表
+日志列表
+```
+
+### 37.2 表单页面怎么讲
+
+表单页面重点讲：
+
+```text
+输入字段
+校验规则
+新增和编辑复用
+提交接口
+保存后跳转或刷新
+```
+
+答辩模板：
+
+```text
+这个表单页面用于【新增/编辑】数据。前端通过表单收集用户输入，并进行必填校验。新增时调用 POST 接口，编辑时调用 PUT 接口。后端接收请求对象后，在 Service 层进行业务校验，再通过 Mapper 插入或更新数据库。保存成功后，前端提示成功并返回列表页。
+```
+
+适用页面：
+
+```text
+新建销售单
+编辑销售单
+新建采购单
+编辑采购单
+商品编辑
+客户编辑
+供应商编辑
+账号编辑
+```
+
+### 37.3 审核页面怎么讲
+
+审核功能重点讲：
+
+```text
+谁能审核
+什么状态能审核
+审核通过后状态变什么
+审核驳回后状态变什么
+是否写日志和消息
+```
+
+答辩模板：
+
+```text
+审核功能不是简单修改状态。后端会先判断当前用户是否有审核权限，再判断单据是否处于待审核状态。审核通过后，单据状态变为已审核；审核驳回后，状态变为已驳回。同时系统会记录操作日志和追溯记录，并通知单据创建人。
+```
+
+适用模块：
+
+```text
+销售单审核
+采购单审核
+异常单据审核
+```
+
+### 37.4 导入页面怎么讲
+
+导入功能重点讲：
+
+```text
+上传文件
+文件大小限制
+文件格式解析
+逐行校验
+成功失败统计
+错误信息返回
+```
+
+答辩模板：
+
+```text
+导入功能前端使用上传组件选择 Excel 文件，然后通过 multipart/form-data 提交给后端。后端接收 MultipartFile 后，先判断文件大小和格式，再使用 Excel 工具类解析数据。解析后逐行校验必填字段和业务字段，符合要求的数据写入数据库，不符合要求的记录失败原因。最后返回成功数量、失败数量和错误信息。
+```
+
+适用模块：
+
+```text
+销售订单导入
+采购订单导入
+库存导入
+```
+
+### 37.5 导出页面怎么讲
+
+导出功能重点讲：
+
+```text
+查询数据
+生成 Excel
+返回文件流
+前端下载
+```
+
+答辩模板：
+
+```text
+导出功能由前端触发，后端查询需要导出的业务数据，然后使用 Excel 工具类生成 .xlsx 文件。因为导出返回的是文件流，所以后端不使用普通 ApiResponse，而是设置响应头并返回二进制内容。前端拿到文件流后生成下载链接，让浏览器下载 Excel 文件。
+```
+
+---
+
+## 38. 如果老师让你现场“写一个简单功能”，怎么说思路
+
+如果老师让你现场加一个小功能，比如：
+
+```text
+给商品列表加一个查询条件
+给销售订单加一列备注
+给按钮加权限
+修改一个状态判断
+```
+
+你可以先说思路，再动手。
+
+### 38.1 新增查询条件
+
+答辩说法：
+
+```text
+我会从前端到后端逐层加这个查询条件。前端先在页面加输入框，并把输入值传给 api 方法；api 方法通过 query params 传给后端；Controller 用 @RequestParam 接收；Service 继续传给 Mapper；Mapper 或 SqlProvider 在 SQL 中增加 where 条件。最后刷新页面验证查询结果。
+```
+
+修改路径：
+
+```text
+View.vue
+api/*.js
+Controller.java
+Service.java
+Mapper.java 或 SqlProvider.java
+```
+
+### 38.2 新增展示字段
+
+答辩说法：
+
+```text
+新增展示字段要看后端是否已经返回。如果后端已经返回，只需要改前端表格列；如果没有返回，就需要先确认数据库有没有字段，再改 Mapper 查询 SQL、返回 Model，最后前端表格展示。
+```
+
+修改路径：
+
+```text
+schema.sql
+Model.java
+Mapper.java
+View.vue
+```
+
+### 38.3 新增按钮权限
+
+答辩说法：
+
+```text
+按钮权限前端通过权限指令控制显示，后端也要在业务接口中做权限校验。前端控制是为了用户体验，后端校验是为了安全。
+```
+
+修改路径：
+
+```text
+View.vue
+route-map.ts 或 权限配置
+Service.java
+permissions / role_permissions 数据
+```
+
+### 38.4 修改业务状态判断
+
+答辩说法：
+
+```text
+状态判断属于业务规则，应优先修改 Service 层。前端可以同步调整按钮显示条件，但最终是否允许操作必须以后端 Service 校验为准。
+```
+
+修改路径：
+
+```text
+Service.java
+View.vue
+```
+
+---
+
+## 39. 每个模块可以怎么写成作业文档
+
+如果老师要求你提交“模块实现过程”，可以按下面格式写。
+
+### 39.1 标题
+
+```text
+销售订单管理模块实现过程
+```
+
+### 39.2 第一段：模块作用
+
+```text
+销售订单管理模块主要用于完成销售业务中的订单创建、订单审核、销售出库、回款登记、订单查询、导入导出等功能。该模块连接了客户、商品、库存、回款和业务追溯等数据，是系统中比较核心的业务模块。
+```
+
+### 39.3 第二段：前端实现
+
+```text
+前端页面主要位于 frontend/src/views/sale 目录下，其中 SaleOrderListView.vue 用于展示销售订单列表，SaleOrderFormView.vue 用于新增、编辑和查看销售单，SaleOutboundView.vue 用于销售出库。页面通过 Element Plus 组件实现表格、表单、弹窗和按钮操作。页面中的按钮事件会调用 frontend/src/api/sales.js 中封装的接口方法。
+```
+
+### 39.4 第三段：接口实现
+
+```text
+销售模块的前端接口统一封装在 frontend/src/api/sales.js 中。例如 fetchSales 用于查询销售订单列表，createSales 用于创建销售订单，auditSales 用于审核销售单，outboundSales 用于销售出库，paymentSales 用于回款登记。所有请求都会经过 http.ts 中的 Axios 实例，由它统一添加 token 并处理接口返回结果。
+```
+
+### 39.5 第四段：后端实现
+
+```text
+后端销售模块入口为 SalesController，它定义了 /api/sales 相关接口。Controller 接收到请求后调用 SalesService。SalesService 是销售模块的业务核心，负责订单状态判断、用户权限校验、金额计算、库存校验、日志记录、消息提醒等逻辑。数据库访问由 SalesMapper 完成。
+```
+
+### 39.6 第五段：数据库实现
+
+```text
+销售模块主要涉及 sales_orders、payment_records、inventories、inventory_records、trace_records、operation_logs、messages 等表。其中 sales_orders 保存销售订单主数据，payment_records 保存回款记录，inventories 保存当前库存，inventory_records 保存库存变化流水，trace_records 和 operation_logs 用于保存业务追溯和操作日志。
+```
+
+### 39.7 第六段：总结
+
+```text
+该模块整体流程是：前端页面触发操作，api 文件发送请求，后端 Controller 接收请求，Service 处理业务逻辑，Mapper 操作数据库，最后后端返回结果并由前端刷新页面。通过这种分层结构，页面展示、业务逻辑和数据库操作职责清晰，便于后续维护和扩展。
+```
+
+---
+
+## 40. 答辩时最稳的表达方式
+
+答辩时不要说：
+
+```text
+这个页面就是我写了一个 Vue，然后调了接口。
+```
+
+这种说法太简单，老师会继续追问。
+
+建议说：
+
+```text
+我从完整链路说明这个页面。前端页面负责展示和操作，api 文件负责请求封装，http.ts 负责统一加 token 和处理响应，后端 Controller 负责接收接口请求，Service 负责业务规则，Mapper 负责数据库操作，数据库表保存最终数据，最后接口返回结果给前端刷新页面。
+```
+
+如果老师继续问细节，你就往下拆：
+
+```text
+问页面:
+  讲 View.vue、template、script setup、按钮事件、表格数据。
+
+问接口:
+  讲 api/*.js、http.ts、请求方法、请求路径。
+
+问后端:
+  讲 Controller、Service、Mapper。
+
+问数据库:
+  讲主表、关联表、流水表、日志表。
+
+问安全:
+  讲 token、拦截器、权限校验、后端兜底校验。
+
+问改代码:
+  讲从页面到数据库逐层定位。
+```
+
+最后可以补一句：
+
+```text
+所以我理解这个功能不是只看某一个文件，而是看它从页面操作到数据库落库的完整链路。
+```
